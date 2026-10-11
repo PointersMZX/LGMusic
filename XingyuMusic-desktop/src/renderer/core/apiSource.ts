@@ -29,7 +29,7 @@ export const applyQingCloud = () => {
     userApi.message = valid.error ?? ''
     return
   }
-  userApi.apis = buildQingCloudApis(valid.lines) as unknown as Partial<LX.UserApi.UserApiSources>
+  userApi.apis = buildQingCloudApis(valid.lines, valid.gateway) as unknown as Partial<LX.UserApi.UserApiSources>
   qualityList.value = valid.qualityList
   userApi.status = true
   userApi.message = ''

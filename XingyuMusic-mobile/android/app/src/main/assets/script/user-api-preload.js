@@ -1,5 +1,81 @@
 'use strict'
 
+if (typeof globalThis.URLSearchParams !== 'function') {
+  globalThis.URLSearchParams = class URLSearchParams {
+    constructor(init = '') {
+      this._entries = []
+      if (typeof init === 'string') {
+        const source = init.startsWith('?') ? init.slice(1) : init
+        if (source) {
+          for (const part of source.split('&')) {
+            if (!part) continue
+            const index = part.indexOf('=')
+            const key = index >= 0 ? part.slice(0, index) : part
+            const value = index >= 0 ? part.slice(index + 1) : ''
+            this.append(decodeURIComponent(key), decodeURIComponent(value))
+          }
+        }
+      } else if (Array.isArray(init)) {
+        for (const pair of init) this.append(pair[0], pair[1])
+      } else if (init && typeof init === 'object') {
+        for (const key of Object.keys(init)) this.append(key, init[key])
+      }
+    }
+
+    append(key, value) {
+      this._entries.push([String(key), String(value)])
+    }
+
+    set(key, value) {
+      const normalizedKey = String(key)
+      this.delete(normalizedKey)
+      this.append(normalizedKey, value)
+    }
+
+    delete(key) {
+      const normalizedKey = String(key)
+      this._entries = this._entries.filter(([entryKey]) => entryKey !== normalizedKey)
+    }
+
+    get(key) {
+      const normalizedKey = String(key)
+      const entry = this._entries.find(([entryKey]) => entryKey === normalizedKey)
+      return entry ? entry[1] : null
+    }
+
+    has(key) {
+      return this.get(key) !== null
+    }
+
+    toString() {
+      return this._entries
+        .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
+        .join('&')
+    }
+  }
+}
+
+if (typeof Promise.any !== 'function') {
+  Promise.any = promises => new Promise((resolve, reject) => {
+    const items = Array.from(promises || [])
+    if (items.length === 0) {
+      reject(new Error('All promises were rejected'))
+      return
+    }
+    let rejectedCount = 0
+    const errors = []
+    items.forEach((promise, index) => {
+      Promise.resolve(promise).then(resolve, error => {
+        errors[index] = error
+        rejectedCount += 1
+        if (rejectedCount === items.length) {
+          reject(new Error('All promises were rejected'))
+        }
+      })
+    })
+  })
+}
+
 globalThis.lx_setup = (key, id, name, description, version, author, homepage, rawScript) => {
   delete globalThis.lx_setup
   const _nativeCall = globalThis.__lx_native_call__
@@ -149,13 +225,16 @@ globalThis.lx_setup = (key, id, name, description, version, author, homepage, ra
   const events = {
     request: null,
   }
-  const allSources = ['kw', 'kg', 'tx', 'wy', 'mg', 'local']
+  // 这里的列表决定脚本声明的平台能否透传给 React Native。
+  // qs（汽水）当前仅用于展示，是否可播放由上层判断。
+  const allSources = ['kw', 'kg', 'tx', 'wy', 'mg', 'qs', 'local']
   const supportQualitys = {
-    kw: ['128k', '320k', 'flac', 'flac24bit'],
-    kg: ['128k', '320k', 'flac', 'flac24bit'],
-    tx: ['128k', '320k', 'flac', 'flac24bit'],
-    wy: ['128k', '320k', 'flac', 'flac24bit'],
-    mg: ['128k', '320k', 'flac', 'flac24bit'],
+    kw: ['128k', '320k', 'flac', 'flac24bit', 'hires', 'atmos', 'master', 'atmos_plus'],
+    kg: ['128k', '320k', 'flac', 'flac24bit', 'hires', 'atmos', 'master', 'atmos_plus'],
+    tx: ['128k', '320k', 'flac', 'flac24bit', 'hires', 'atmos', 'master', 'atmos_plus'],
+    wy: ['128k', '320k', 'flac', 'flac24bit', 'hires', 'atmos', 'master', 'atmos_plus'],
+    mg: ['128k', '320k', 'flac', 'flac24bit', 'hires', 'atmos', 'master', 'atmos_plus'],
+    qs: ['128k', '320k', 'flac', 'flac24bit', 'hires', 'atmos', 'master', 'atmos_plus', 'spatial'],
     local: [],
   }
   const supportActions = {
@@ -164,6 +243,7 @@ globalThis.lx_setup = (key, id, name, description, version, author, homepage, ra
     tx: ['musicUrl'],
     wy: ['musicUrl'],
     mg: ['musicUrl'],
+    qs: ['musicUrl'],
     xm: ['musicUrl'],
     local: ['musicUrl', 'lyric', 'pic'],
   }

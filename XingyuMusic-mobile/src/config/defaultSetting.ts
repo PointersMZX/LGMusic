@@ -3,6 +3,9 @@ const defaultSetting: LX.AppSetting = {
   'common.isAutoTheme': false,
   'common.langId': null,
   'common.apiSource': '',
+  // 星雨音乐官方音源（青听渠道）：B 型 JSON 钥匙；未导入时为空
+  'source.qingtngConfig': '',
+  'source.qingtngEnabled': false,
   'common.sourceNameType': 'alias',
   'common.shareType': 'system',
   'common.isAgreePact': false,

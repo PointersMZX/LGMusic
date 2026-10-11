@@ -2,11 +2,12 @@
  * 官方渠道云解析客户端（钥匙模型）
  *
  * 依据决策：内置解析违法——本模块默认【不启用】。仅当用户在"设置-音源"里
- * 导入官方渠道 JSON 配置（`{lines:[{id,name,levels,enabled,quality,...}]}`，即"钥匙"）后，
+ * 导入官方渠道 JSON 配置（`{name?,interface?,gateway?,lines:[{id,name,levels,enabled,quality,...}]}`，即"星雨音乐官方音源·青听渠道"钥匙）后，
  * 才把这里构造的 api 挂载进 `userApi.apis`，解锁对应渠道的播放地址解析。
  *
- * - 5 渠道（wy/kw/qq(=tx)/kg/mg）走官方渠道云 `POST musicserver.haitangw.cc/v1/music/resolve-url`
- * - bili（星宝）走 B 站公开 `x/player/playurl`（非 WBI，客户端直连；官方渠道云无 bili 线路）
+ * - 5 渠道（wy/kw/qq(=tx)/kg/mg）走青听渠道网关 `POST {gateway.resolve}`（缺省 musicserver.haitangw.cc/v1/music/resolve-url）
+ * - bili（星宝）走 B 站公开 `x/player/playurl`（非 WBI，客户端直连；青听渠道网关无 bili 线路）
+ * - `gateway` 由配置文件携带：青听作者调整接口后只需更换 JSON（或改本文件默认值），客户端逻辑不动
  */
 import { httpFetch } from '@renderer/utils/request'
 
@@ -67,6 +68,17 @@ export interface QingLine {
   quality?: string
 }
 
+/** 青听渠道网关（由 B 型 JSON 的 `gateway` 字段携带；缺省=官方默认端点） */
+export interface QingGateway {
+  resolve: string
+  timeout: number
+}
+
+export const DEFAULT_GATEWAY: QingGateway = {
+  resolve: 'https://musicserver.haitangw.cc/v1/music/resolve-url',
+  timeout: 12_000,
+}
+
 export interface QingValidation {
   ok: boolean
   error?: string
@@ -74,16 +86,19 @@ export interface QingValidation {
   lines: { [source: string]: { name: string, levels: string[] }[] }
   /** 各渠道可选 LX.Quality（用于 qualityList） */
   qualityList: LX.QualityList
+  /** 网关（配置缺失/非法时回落默认端点） */
+  gateway: QingGateway
 }
 
 const VALID_IDS = ['wy', 'kw', 'qq', 'kg', 'mg', 'bili']
 
 /**
- * 校验并归一化官方渠道 JSON（`{lines:[...]}`）。
+ * 校验并归一化官方渠道 JSON（`{name?,interface?,gateway?,lines:[...]}`）。
  * 与官方渠道 PC 同款约束：lines 必为数组、每项需 id/name/levels。
+ * gateway 可选：缺省回落默认端点；resolve 须为 http(s) 地址，timeout 合法则采纳。
  */
 export const validateQingLines = (raw: unknown): QingValidation => {
-  const result: QingValidation = { ok: false, lines: {}, qualityList: {} }
+  const result: QingValidation = { ok: false, lines: {}, qualityList: {}, gateway: { ...DEFAULT_GATEWAY } }
   let data: any = raw
   if (typeof data === 'string') {
     try {
@@ -92,6 +107,12 @@ export const validateQingLines = (raw: unknown): QingValidation => {
       result.error = 'JSON 解析失败：' + e.message
       return result
     }
+  }
+  // 网关：配置优先，非法回落默认（不为网关缺失而整体报错）
+  const gw = data?.gateway
+  if (gw && typeof gw === 'object') {
+    if (typeof gw.resolve === 'string' && /^https?:\/\//.test(gw.resolve)) result.gateway.resolve = gw.resolve.trim()
+    if (typeof gw.timeout === 'number' && gw.timeout >= 3000 && gw.timeout <= 60000) result.gateway.timeout = gw.timeout
   }
   const lines = Array.isArray(data?.lines) ? data.lines : (Array.isArray(data) ? data : null)
   if (!lines) {
@@ -134,21 +155,19 @@ export const validateQingLines = (raw: unknown): QingValidation => {
 
 /* ---------------- 客户端请求 ---------------- */
 
-const RESOLVE_URL = 'https://musicserver.haitangw.cc/v1/music/resolve-url'
-const CLOUD_TIMEOUT = 12_000
 // 客户端 URL 缓存（与官方渠道 PC 同款 45s TTL）
 const urlCache = new Map<string, { url: string, expiresAt: number }>()
 const getCacheKey = (source: string, rid: string, tier: string) => `${source}|${rid}|${tier}`
 
-const resolveCloud = async(qingSource: string, rid: string, tier: string): Promise<{ url: string, type: LX.Quality }> => {
+const resolveCloud = async(qingSource: string, rid: string, tier: string, gateway: QingGateway): Promise<{ url: string, type: LX.Quality }> => {
   const key = getCacheKey(qingSource, rid, tier)
   const cached = urlCache.get(key)
   if (cached && cached.expiresAt > Date.now()) return { url: cached.url, type: TIER_TO_QUALITY[tier] ?? '128k' }
 
-  const req: any = httpFetch(RESOLVE_URL, {
+  const req: any = httpFetch(gateway.resolve, {
     method: 'post',
     json: true,
-    timeout: CLOUD_TIMEOUT,
+    timeout: gateway.timeout,
     data: { source: qingSource, rid, level: tier },
   })
   const { body } = await req.promise
@@ -196,9 +215,9 @@ export interface QingCloudApis {
 
 /**
  * 按导入的渠道配置构造 userApi 形态的 apis。
- * `lines` 来自 `validateQingLines` 归一化结果。
+ * `lines` 来自 `validateQingLines` 归一化结果；`gateway` 为配置携带（或默认）网关。
  */
-export const buildQingCloudApis = (lines: QingValidation['lines']): QingCloudApis => {
+export const buildQingCloudApis = (lines: QingValidation['lines'], gateway: QingGateway = DEFAULT_GATEWAY): QingCloudApis => {
   const apis: QingCloudApis = {}
   const emptyLyric: LX.Music.LyricInfo = { lyric: '', tlyric: '', rlyric: '', lxlyric: '' }
   for (const source of Object.keys(lines) as LX.OnlineSource[]) {
@@ -232,7 +251,7 @@ export const buildQingCloudApis = (lines: QingValidation['lines']): QingCloudApi
               }
               res = await resolveBili(bvid, String(cid), tier)
             } else {
-              res = await resolveCloud(qingSource, rid, tier)
+              res = await resolveCloud(qingSource, rid, tier, gateway)
             }
             resolve(res)
           } catch (err: any) {

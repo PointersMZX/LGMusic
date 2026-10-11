@@ -103,7 +103,7 @@ export default {
     const _id = to.query.id
     const _name = to.query.name
     if (_source == null || _id == null || _name == null) {
-      next({ path: '/search' })
+      next({ path: '/search', query: {} })
       return
     }
     next()

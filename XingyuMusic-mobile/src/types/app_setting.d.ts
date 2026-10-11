@@ -24,6 +24,16 @@ declare global {
       'common.apiSource': string
 
       /**
+       * 星雨音乐官方音源（青听渠道）钥匙配置 JSON（`{gateway?,lines:[...]}`）；空串=未导入
+       */
+      'source.qingtngConfig': string
+
+      /**
+       * 星雨音乐官方音源（青听渠道）是否启用
+       */
+      'source.qingtngEnabled': boolean
+
+      /**
        * 音源名称类型，原名、别名
        */
       'common.sourceNameType': 'alias' | 'real'
