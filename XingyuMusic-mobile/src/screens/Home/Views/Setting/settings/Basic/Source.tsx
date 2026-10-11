@@ -101,7 +101,7 @@ export default memo(() => {
     modalRef.current?.show()
   }
 
-  /* ---------------- B 型 · 官方音源（青听渠道） ---------------- */
+  /* ---------------- A 型 · 星雨音乐官方音源 ---------------- */
   const qingCloudEnabled = useSettingValue('source.qingtngEnabled')
   const qingCloudActive = useMemo(() => apiSourceSetting == QINGCLOUD_API_ID, [apiSourceSetting])
   const qingConfig = settingState.setting['source.qingtngConfig']
@@ -144,32 +144,10 @@ export default memo(() => {
 
   return (
     <SubTitle title={t('setting_basic_source')}>
-      {/* A 型 · JS 音源 */}
+      {/* A 型 · 星雨音乐官方音源 */}
       <View style={styles.card}>
         <Text size={14} style={styles.cardTitle}>{t('source_card_a_title')}</Text>
         <Text size={12} color={theme['c-500']} style={styles.cardDesc}>{t('source_card_a_desc')}</Text>
-        <View style={styles.list}>
-          {
-            list.map(({ id, name }) => <Item name={name} id={id} key={id} change={setApiSourceId} />)
-          }
-          {
-            userApiList.map(({ id, name, desc, statusLabel }) => <Item name={name} desc={desc} statusLabel={statusLabel} id={id} key={id} change={setApiSourceId} />)
-          }
-          {
-            userApiList.length == 0 && list.length == 0
-              ? <Text size={13} color={theme['c-500']} style={styles.empty}>{t('user_api_empty')}</Text>
-              : null
-          }
-        </View>
-        <View style={styles.btn}>
-          <Button onPress={handleShow}>{t('setting_basic_source_user_api_btn')}</Button>
-        </View>
-      </View>
-
-      {/* B 型 · 官方音源（青听渠道） */}
-      <View style={styles.card}>
-        <Text size={14} style={styles.cardTitle}>{t('source_card_b_title')}</Text>
-        <Text size={12} color={theme['c-500']} style={styles.cardDesc}>{t('source_card_b_desc')}</Text>
         {
           qingCloudEnabled
             ? (
@@ -190,6 +168,28 @@ export default memo(() => {
               )
         }
         <Text size={11} color={theme['c-600']} style={styles.hint}>{t('source_b_hint')}</Text>
+      </View>
+
+      {/* B 型 · JS 兼容格式音源 */}
+      <View style={styles.card}>
+        <Text size={14} style={styles.cardTitle}>{t('source_card_b_title')}</Text>
+        <Text size={12} color={theme['c-500']} style={styles.cardDesc}>{t('source_card_b_desc')}</Text>
+        <View style={styles.list}>
+          {
+            list.map(({ id, name }) => <Item name={name} id={id} key={id} change={setApiSourceId} />)
+          }
+          {
+            userApiList.map(({ id, name, desc, statusLabel }) => <Item name={name} desc={desc} statusLabel={statusLabel} id={id} key={id} change={setApiSourceId} />)
+          }
+          {
+            userApiList.length == 0 && list.length == 0
+              ? <Text size={13} color={theme['c-500']} style={styles.empty}>{t('user_api_empty')}</Text>
+              : null
+          }
+        </View>
+        <View style={styles.btn}>
+          <Button onPress={handleShow}>{t('setting_basic_source_user_api_btn')}</Button>
+        </View>
       </View>
       <UserApiEditModal ref={modalRef} />
       <ChoosePath ref={choosePathRef} onConfirm={handleConfirmBPath} />

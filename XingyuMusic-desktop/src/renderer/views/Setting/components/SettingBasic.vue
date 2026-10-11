@@ -42,14 +42,14 @@ dd
       p(:class="$style.sourceCardTitle") {{ $t('user_api__type_a_title') }}
       p(:class="$style.sourceHint") {{ $t('user_api__type_a_desc') }}
       div(:class="$style.actionRow")
-        base-btn.btn(min @click="isShowUserApiModal = true") {{ $t('user_api__btn_import_js') }}
-        base-btn.btn(min @click="isShowUserApiModal = true") {{ $t('user_api__manage_js') }}
+        base-btn.btn(min @click="importOfficialB") {{ $t('user_api__btn_import_b') }}
+        span(v-if="officialActive" :class="$style.status") {{ $t('user_api__official_b_active') }}
     .gap-top(:class="$style.sourceModel")
       p(:class="$style.sourceCardTitle") {{ $t('user_api__type_b_title') }}
       p(:class="$style.sourceHint") {{ $t('user_api__type_b_desc') }}
       div(:class="$style.actionRow")
-        base-btn.btn(min @click="importOfficialB") {{ $t('user_api__btn_import_b') }}
-        span(v-if="officialActive" :class="$style.status") {{ $t('user_api__official_b_active') }}
+        base-btn.btn(min @click="isShowUserApiModal = true") {{ $t('user_api__btn_import_js') }}
+        base-btn.btn(min @click="isShowUserApiModal = true") {{ $t('user_api__manage_js') }}
 
 dd
   h3#basic_window_size {{ $t('setting__basic_window_size') }}

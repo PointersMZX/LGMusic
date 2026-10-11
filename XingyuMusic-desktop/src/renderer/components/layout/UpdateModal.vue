@@ -76,9 +76,6 @@ material-modal(:show="versionInfo.showModal" max-width="60%" @close="handleClose
         p 手动更新可以去&nbsp;
           strong.hover.underline(aria-label="点击打开" @click="handleOpenUrl('https://github.com/PointersMZX/XingyuMusic/releases')") 软件发布页
           | 下载。
-        p 若遇到问题可以阅读
-          strong.hover.underline(aria-label="点击打开" @click="handleOpenUrl('https://github.com/PointersMZX/XingyuMusic')") 桌面版常见问题
-          | 。
         p(v-if="progress") 当前下载进度：{{ progress }}
         p(v-else) &nbsp;
       div(:class="$style.btns")

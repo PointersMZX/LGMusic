@@ -1,7 +1,7 @@
 import { useRef, useImperativeHandle, forwardRef, useState } from 'react'
 import Text from '@/components/common/Text'
-import { View, TouchableOpacity } from 'react-native'
-import { createStyle, openUrl } from '@/utils/tools'
+import { View } from 'react-native'
+import { createStyle } from '@/utils/tools'
 import { useTheme } from '@/store/theme/hook'
 import { useI18n } from '@/lang'
 import Dialog, { type DialogType } from '@/components/common/Dialog'
@@ -95,10 +95,6 @@ export default forwardRef<UserApiEditModalType, {}>((props, ref) => {
     dialogRef.current?.setVisible(false)
   }
 
-  const openFAQPage = () => {
-    void openUrl('https://lyswhut.github.io/lx-music-doc/mobile/custom-source')
-  }
-
   return (
     visible
       ? (
@@ -108,12 +104,6 @@ export default forwardRef<UserApiEditModalType, {}>((props, ref) => {
               <Text size={16} style={styles.title}>{t('user_api_title')}</Text>
               <List />
               <View style={styles.tips}>
-                <Text style={styles.tipsText} size={12}>
-                  {t('user_api_readme')}
-                </Text>
-                <TouchableOpacity onPress={openFAQPage}>
-                  <Text style={{ ...styles.tipsText, textDecorationLine: 'underline' }} size={12} color={theme['c-primary-font']}>FAQ</Text>
-                </TouchableOpacity>
                 <View>
                   <Text style={styles.tipsText} size={12}>{t('user_api_note')}</Text>
                 </View>

@@ -1,6 +1,6 @@
 {
-  "name": "星雨音乐官方音源 · 青听渠道",
-  "interface": "qingting",
+  "name": "星雨音乐官方音源",
+  "interface": "xingyu",
   "gateway": {
     "resolve": "https://musicserver.haitangw.cc/v1/music/resolve-url",
     "timeout": 12000

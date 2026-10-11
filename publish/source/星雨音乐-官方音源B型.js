@@ -1,6 +1,6 @@
 /**
- * @name 星雨官方音源A型
- * @description 六线官方音源：哔哩/网易直连优先，青听渠道网关兜底
+ * @name 星雨官方音源B型
+ * @description 多线路 JS 兼容格式音源：哔哩/网易直连优先，官方网关兜底
  * @version 2.0.0
  * @author XingyuMusic
  * @homepage https://github.com/PointersMZX/XingyuMusic
@@ -9,20 +9,20 @@
   'use strict'
 
   // ================= 配置区 =================
-  // 青听渠道解析网关（与官方音源 B 型同源；青听作者调整接口时改这里一处即可）
+  // 官方解析网关（与官方音源 A 型同源；网关接口调整时改这里一处即可）
   const GATEWAY = {
     resolve: 'https://musicserver.haitangw.cc/v1/music/resolve-url',
     timeout: 12000,
   }
 
-  // 六条线路：our=应用内源 id，qing=青听渠道原生 id（星腾=qq）
+  // 六条线路：our=应用内源 id，gw=网关原生 id（星腾=qq）
   const LINES = {
-    kw: { qing: 'kw', direct: null },
-    wy: { qing: 'wy', direct: 'wy' },
-    tx: { qing: 'qq', direct: null },
-    kg: { qing: 'kg', direct: null },
-    mg: { qing: 'mg', direct: null },
-    bili: { qing: 'bili', direct: 'bili' },
+    kw: { gw: 'kw', direct: null },
+    wy: { gw: 'wy', direct: 'wy' },
+    tx: { gw: 'qq', direct: null },
+    kg: { gw: 'kg', direct: null },
+    mg: { gw: 'mg', direct: null },
+    bili: { gw: 'bili', direct: 'bili' },
   }
 
   // 应用音质 → 网关档位
@@ -60,7 +60,7 @@
     })
   })
 
-  // ================= 直连（落雪风格：各平台公开端点） =================
+  // ================= 直连（各平台公开端点） =================
   // 星宝（哔哩）：公开 playurl（非 WBI），dash 音频流；192k 档优先取 flac 流
   const getBiliDirect = (musicInfo, type) => {
     const bvid = String(musicInfo.id || '')
@@ -113,16 +113,16 @@
     wy: getWyDirect,
   }
 
-  // ================= 青听渠道网关兜底（青听风格：解析失败自动降档/回落） =================
-  const cacheKey = (qing, rid, tier) => qing + '|' + rid + '|' + tier
-  const gatewayCall = (qing, rid, tier) => {
-    const key = cacheKey(qing, rid, tier)
+  // ================= 官方网关兜底（解析失败自动降档/回落） =================
+  const cacheKey = (gw, rid, tier) => qing + '|' + rid + '|' + tier
+  const gatewayCall = (gw, rid, tier) => {
+    const key = cacheKey(gw, rid, tier)
     const cached = urlCache.get(key)
     if (cached && cached.exp > Date.now()) return Promise.resolve(cached.url)
     return http(GATEWAY.resolve, {
       method: 'post',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ source: qing, rid: rid, level: tier }),
+      body: JSON.stringify({ source: gw, rid: rid, level: tier }),
       timeout: GATEWAY.timeout,
     }).then(({ body }) => {
       const data = (body && body.data) || body
@@ -134,12 +134,12 @@
     })
   }
   // 档位阶梯：想要档 → exhigh → standard（哔哩线无阶梯）
-  const gatewayLadder = (qing, rid, wantTier) => {
+  const gatewayLadder = (gw, rid, wantTier) => {
     const ladder = [wantTier]
     if (wantTier !== 'exhigh') ladder.push('exhigh')
     if (wantTier !== 'standard') ladder.push('standard')
     const tryLadder = (idx) => {
-      if (idx >= ladder.length) return Promise.reject(new Error('青听渠道网关：各档均失败'))
+      if (idx >= ladder.length) return Promise.reject(new Error('官方网关：各档均失败'))
       return gatewayCall(qing, rid, ladder[idx]).catch(() => tryLadder(idx + 1))
     }
     return tryLadder(0)
@@ -155,14 +155,14 @@
     const direct = DIRECT[line.direct]
     if (direct) {
       return direct(musicInfo, type).catch(() => {
-        // 直连失败 → 青听渠道网关兜底（哔哩线网关无此线路，直连失败即失败）
+        // 直连失败 → 官方网关兜底（哔哩线网关无此线路，直连失败即失败）
         if (source === 'bili') {
           throw new Error('哔哩直连取址失败（网关无哔哩线路）')
         }
-        return gatewayLadder(line.qing, rid, wantTier)
+        return gatewayLadder(line.gw, rid, wantTier)
       })
     }
-    return gatewayLadder(line.qing, rid, wantTier)
+    return gatewayLadder(line.gw, rid, wantTier)
   }
 
   // ================= 注册 =================
