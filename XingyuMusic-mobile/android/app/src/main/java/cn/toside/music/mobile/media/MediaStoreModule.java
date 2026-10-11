@@ -57,7 +57,7 @@ public class MediaStoreModule extends ReactContextBaseJavaModule {
       }
       values.put(MediaStore.MediaColumns.IS_PENDING, 1);
 
-      final Uri uri;
+      Uri uri = null;
       try {
         uri = reactContext.getContentResolver().insert(collection, values);
       } catch (Exception ex) {
