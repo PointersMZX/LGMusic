@@ -2,6 +2,8 @@ import leaderboard from './leaderboard'
 import { apis } from '../api-source'
 import songList from './songList'
 import musicSearch from './musicSearch'
+import singerSearch from './singerSearch'
+import albumSearch from './albumSearch'
 import pic from './pic'
 import lyric from './lyric'
 import hotSearch from './hotSearch'
@@ -13,6 +15,8 @@ const kg = {
   leaderboard,
   songList,
   musicSearch,
+  singer: { search: (text, page, limit) => singerSearch.search(text, page, limit) },
+  album: { search: (text, page, limit) => albumSearch.search(text, page, limit) },
   hotSearch,
   comment,
   getMusicUrl(songInfo, type) {

@@ -1,17 +1,15 @@
 <template>
   <div :class="$style.container">
-    <transition enter-active-class="animated fadeIn" leave-active-class="animated fadeOut">
-      <div v-show="listInfo.noItemLabel" :class="$style.noitem">
-        <p v-text="listInfo.noItemLabel" />
-      </div>
-    </transition>
+    <LyricList ref="listRef" :list-info="listInfo" :visible-source="sourceId == 'all'" @toggle-page="togglePage" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { watch } from '@common/utils/vueTools'
 import { searchText } from '@renderer/store/search/state'
+import { useRouter, useRoute } from '@common/utils/vueRouter'
 import useList, { type SearchSource } from './useList'
+import LyricList from './LyricList.vue'
 
 interface Props {
   sourceId: SearchSource
@@ -19,8 +17,11 @@ interface Props {
 }
 
 const props = defineProps<Props>()
+const router = useRouter()
+const route = useRoute()
 
 const {
+  listRef,
   listInfo,
   search,
 } = useList()
@@ -38,6 +39,15 @@ watch(searchText, (searchText) => {
   immediate: true,
 })
 
+const togglePage = (page: number) => {
+  void router.replace({
+    path: route.path,
+    query: {
+      ...route.query,
+      page,
+    },
+  })
+}
 </script>
 
 

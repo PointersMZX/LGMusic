@@ -50,10 +50,10 @@ const doSearch = (text, page, limit, searchType) => {
 
 export default {
   /**
-   * 歌手检索（search_type 3）
+   * 歌手检索（search_type 1，实测 DoSearchForQQMusicDesktop：1=歌手 2=专辑 3=歌单 4=MV）
    */
   searchSinger(text, page = 1, limit = 30) {
-    return doSearch(text, page, limit, 3).then(data => {
+    return doSearch(text, page, limit, 1).then(data => {
       const raw = data.body?.singer?.list || []
       const list = raw.map(item => ({
         source: 'tx',
@@ -70,10 +70,10 @@ export default {
     })
   },
   /**
-   * 专辑检索（search_type 5）
+   * 专辑检索（search_type 2）
    */
   searchAlbum(text, page = 1, limit = 30) {
-    return doSearch(text, page, limit, 5).then(data => {
+    return doSearch(text, page, limit, 2).then(data => {
       const raw = data.body?.album?.list || []
       const list = raw.map(item => ({
         source: 'tx',
@@ -90,10 +90,10 @@ export default {
     })
   },
   /**
-   * MV 检索（search_type 14）
+   * MV 检索（search_type 4）
    */
   searchMv(text, page = 1, limit = 30) {
-    return doSearch(text, page, limit, 14).then(data => {
+    return doSearch(text, page, limit, 4).then(data => {
       const raw = data.body?.mv?.list || []
       const list = raw.map(item => {
         const mid = item.mv_mid || item.vid || ''

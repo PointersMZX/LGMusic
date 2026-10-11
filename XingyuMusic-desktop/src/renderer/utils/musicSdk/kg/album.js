@@ -9,21 +9,22 @@ export default {
    * @param {*} limit
    */
   search(text, page = 1, limit = 30) {
-    const url = `http://msearch.kugou.com/api/v3/search/album?keyword=${encodeURIComponent(text)}&page=${page}&pagesize=${limit}&type=0`
-    return createHttpFetch(url).then(body => {
-      if (!body || body.status != 1 || !body.data) return Promise.reject(new Error('kg album search failed'))
-      const raw = body.data.info || []
+    const url = `https://msearch.kugou.com/api/v3/search/album?keyword=${encodeURIComponent(text)}&page=${page}&pagesize=${limit}&type=0`
+    return createHttpFetch(url).then(data => {
+      if (!data) return Promise.reject(new Error('kg album search failed'))
+      // createHttpFetch 返回的是 body.data（{timestamp,total,info}）
+      const raw = data.info || []
       const list = raw.map(item => ({
         source: 'kg',
         id: String(item.albumid),
         name: item.albumname || '',
         author: item.singername || '',
-        img: item.imgurl || null,
+        img: item.imgurl ? String(item.imgurl).replace(/^http:/, 'https:') : null,
         desc: item.intro || '',
         publishDate: item.pubtime ? new Date(item.pubtime * 1000).toISOString().slice(0, 10) : null,
         playCount: null,
       }))
-      const total = body.data.total || 0
+      const total = data.total || 0
       return {
         source: 'kg',
         list,

@@ -2,6 +2,7 @@ import leaderboard from './leaderboard'
 import lyric from './lyric'
 import songList from './songList'
 import musicSearch from './musicSearch'
+import txSearch from './search'
 import { apis } from '../api-source'
 import hotSearch from './hotSearch'
 import comment from './comment'
@@ -12,6 +13,8 @@ const tx = {
   leaderboard,
   songList,
   musicSearch,
+  singer: { search: (text, page, limit) => txSearch.searchSinger(text, page, limit) },
+  album: { search: (text, page, limit) => txSearch.searchAlbum(text, page, limit) },
   hotSearch,
   comment,
 

@@ -1,7 +1,7 @@
 export const bHh = '624868746c'
 
 export const headers = {
-  'User-Agent': 'lx-music mobile request',
+  'User-Agent': 'XingyuMusic mobile request',
   [bHh]: [bHh],
 }
 

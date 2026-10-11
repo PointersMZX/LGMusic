@@ -7,6 +7,8 @@ import lyric from './lyric'
 import hotSearch from './hotSearch'
 import comment from './comment'
 import album from './album'
+import singer from './singer'
+import mvSearch from './mvSearch'
 // import tipSearch from './tipSearch'
 
 const kg = {
@@ -15,6 +17,8 @@ const kg = {
   songList,
   musicSearch,
   album,
+  singer,
+  mv: mvSearch,
   hotSearch,
   comment,
   getMusicUrl(songInfo, type) {

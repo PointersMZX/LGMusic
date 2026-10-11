@@ -2,11 +2,12 @@
   <div :class="$style.container">
     <div v-show="!listInfo.noItemLabel" ref="dom_list_ref" :class="$style.listContent" class="scroll">
       <ul>
-        <li v-for="item in listInfo.list" :key="item.source + item.id" :class="$style.item" @click="openMv(item)">
+        <li v-for="item in listInfo.list" :key="item.source + item.id" :class="$style.item" @click="playMv(item)">
           <div :class="$style.image">
             <img v-if="item.img" :class="$style.img" loading="lazy" decoding="async" :src="item.img" @error="$event.target.remove()">
             <img v-else :class="$style.img" src="@renderer/assets/images/xingyu-logo.png" alt="" />
             <span v-if="item.duration" :class="$style.duration" v-text="item.duration" />
+            <span v-if="item.pageUrl" :class="$style.browserBtn" @click.stop="openMv(item)" title="在浏览器中打开">↗</span>
           </div>
           <div :class="$style.desc">
             <h4>{{ item.name }}</h4>
@@ -31,7 +32,11 @@
 <script setup>
 import { ref } from '@common/utils/vueTools'
 import { openUrl } from '@common/utils/electron'
-import { sourceNames } from '@renderer/store'
+import { LIST_IDS } from '@common/constants'
+import { sourceNames, qualityList } from '@renderer/store'
+import { playList } from '@renderer/core/player/action'
+import { addListMusics, setTempList } from '@renderer/store/list/action'
+import { assertApiSupport } from '@renderer/store/utils'
 
 defineProps({
   listInfo: {
@@ -56,6 +61,27 @@ const sourceLabel = (source) => sourceNames.value[source] || source
 
 const openMv = (item) => {
   if (item.pageUrl) void openUrl(item.pageUrl)
+}
+
+// 站内播放：把 MV 结果映射成可播放歌曲（走当前激活音源取播放地址），失败再考虑浏览器
+const playMv = (item) => {
+  if (!assertApiSupport(item.source)) return
+  const qualities = qualityList.value[item.source] || ['128k']
+  const song = {
+    source: item.source,
+    id: item.id,
+    name: item.name,
+    artist: item.singer || '',
+    album: '',
+    img: item.img || null,
+    duration: item.duration ?? null,
+    type: [qualities[0]],
+    typeUrl: {},
+  }
+  void addListMusics(LIST_IDS.DEFAULT, [song])
+  void setTempList('search_play', [song]).then(() => {
+    playList(LIST_IDS.TEMP, 0)
+  })
 }
 
 defineExpose({
@@ -141,6 +167,24 @@ defineExpose({
   border-radius: 4px;
   background-color: rgba(0, 0, 0, .55);
   color: #fff;
+}
+.browserBtn {
+  position: absolute;
+  left: 6px;
+  bottom: 6px;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  border-radius: 4px;
+  background-color: rgba(0, 0, 0, .55);
+  color: #fff;
+  cursor: pointer;
+  &:hover {
+    background-color: rgba(0, 0, 0, .8);
+  }
 }
 .desc {
   flex: auto;

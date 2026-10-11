@@ -9,7 +9,7 @@ export default {
   page: 0,
   allPage: 1,
   musicSearch(str, page, limit) {
-    const searchRequest = httpFetch(`http://songsearch.kugou.com/song_search_v2?platform=AndroidFilter&iscorrection=1&keyword=${encodeURIComponent(str)}&hifiquality=0&pagesize=${limit}&PrivilegeFilter=0&page=${page}`)
+    const searchRequest = httpFetch(`https://songsearch.kugou.com/song_search_v2?platform=AndroidFilter&iscorrection=1&keyword=${encodeURIComponent(str)}&hifiquality=0&pagesize=${limit}&PrivilegeFilter=0&page=${page}`)
     return searchRequest.promise.then(({ body }) => body)
   },
   filterData(rawData) {

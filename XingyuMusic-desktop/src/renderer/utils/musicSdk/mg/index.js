@@ -8,6 +8,8 @@ import hotSearch from './hotSearch'
 import comment from './comment'
 import singer from './singer'
 import album from './album'
+import mvSearch from './mvSearch'
+import lyricSearch from './lyricSearch'
 // import tipSearch from './tipSearch'
 
 const mg = {
@@ -19,6 +21,8 @@ const mg = {
   comment,
   singer,
   album,
+  mv: mvSearch,
+  lyric: lyricSearch,
   getMusicUrl(songInfo, type) {
     return apis('mg').getMusicUrl(songInfo, type)
   },
