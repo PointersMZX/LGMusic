@@ -39,17 +39,17 @@ export const applyQingCloud = () => {
 
 /** 设置页"导入官方渠道 JSON"入口：持久化钥匙并立即启用。 */
 export const saveQingCloudConfig = (json: string) => {
-  updateSetting({ 'source.qingtngConfig': json, 'source.qingtngEnabled': true })
+  updateSetting({ 'source.qingtngConfig': json, 'source.qingtngEnabled': true, 'common.apiSource': QINGCLOUD_API_ID })
   applyQingCloud()
 }
 
-/** 关闭官方渠道云（钥匙移除后恢复"无解析"）。 */
+/** 关闭官方渠道云（钥匙移除后恢复内置默认源）。 */
 export const disableQingCloud = () => {
-  updateSetting({ 'source.qingtngConfig': '', 'source.qingtngEnabled': false })
+  updateSetting({ 'source.qingtngConfig': '', 'source.qingtngEnabled': false, 'common.apiSource': 'temp' })
   userApi.apis = {}
   qualityList.value = {}
   userApi.status = false
-  apiSource.value = appSetting['common.apiSource']
+  apiSource.value = 'temp'
   if (!window.lx.apiInitPromise[1]) window.lx.apiInitPromise[2](true)
 }
 
@@ -57,6 +57,13 @@ let prevId = ''
 export const setUserApi = async(apiId: string) => {
   if (prevId == apiId) return
   prevId = apiId
+  if (apiId == QINGCLOUD_API_ID) {
+    // 内置官方源是伪源（非文件型 userApi）：不走主进程加载，直接启用内置网关解析
+    applyQingCloud()
+    apiSource.value = apiId
+    if (!window.lx.apiInitPromise[1]) window.lx.apiInitPromise[2](true)
+    return
+  }
   if (window.lx.apiInitPromise[1]) {
     window.lx.apiInitPromise[0] = new Promise<boolean>(resolve => {
       window.lx.apiInitPromise[1] = false
