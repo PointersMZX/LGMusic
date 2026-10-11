@@ -114,7 +114,7 @@ export default memo(() => {
   // 液态玻璃（c-liquid-glass=true）：紫金外发光 + 右缘高光
   const isLiquidGlass = theme['c-liquid-glass'] == 'true'
   const glassStyle = isLiquidGlass ? {
-    shadowColor: '#7C20C2',
+    shadowColor: theme['c-primary'],
     shadowOffset: { width: 3, height: 0 },
     shadowOpacity: 0.4,
     shadowRadius: 18,

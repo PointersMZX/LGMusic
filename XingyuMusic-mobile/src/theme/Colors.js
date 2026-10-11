@@ -108,11 +108,11 @@ export const AppColors = {
   normal30: '#808080',
   normal40: '#999',
 
-  secondary: '#4eb17d',
-  secondary10: '#73bf97',
-  secondary20: '#95d0b2',
-  secondary30: '#b9dfcb',
-  secondary40: '#dcefe5',
+  secondary: '#D4B06F',
+  secondary10: '#DDB87F',
+  secondary20: '#E6C89E',
+  secondary30: '#EFDCBC',
+  secondary40: '#F7EDDD',
 
   borderColor: '#e6e6e6',
   borderColor2: '#ebebeb',

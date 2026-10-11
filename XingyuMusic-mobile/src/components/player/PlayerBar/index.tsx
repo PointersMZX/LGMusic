@@ -24,7 +24,7 @@ export default memo(({ isHome = false }: { isHome?: boolean }) => {
   const playerComponent = useMemo(() => {
     // 液态玻璃（c-liquid-glass=true）：紫金外发光 + 顶部高光，玻璃质感更强
     const glassStyle = isLiquidGlass ? {
-      shadowColor: '#7C20C2',
+      shadowColor: theme['c-primary'],
       shadowOffset: { width: 0, height: -3 },
       shadowOpacity: 0.55,
       shadowRadius: 24,
