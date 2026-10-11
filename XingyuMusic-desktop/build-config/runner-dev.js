@@ -180,8 +180,9 @@ function startElectron() {
   // detect yarn or npm and process commandline args accordingly
   if (process.env.npm_execpath.endsWith('yarn.js')) {
     args = args.concat(process.argv.slice(3))
-  } else if (process.env.npm_execpath.endsWith('npm-cli.js')) {
-    args = args.concat(process.argv.slice(2))
+  } else {
+    // npm / pnpm / 直接 node：透传用户参数（滤掉 pnpm 传入的 "--" 分隔符，它会截断 Chromium 选项解析）
+    args = args.concat(process.argv.slice(2).filter(a => a !== '--'))
   }
 
   electronProcess = spawn(electron, args)
