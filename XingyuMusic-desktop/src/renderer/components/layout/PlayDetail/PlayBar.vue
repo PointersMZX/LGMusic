@@ -7,6 +7,7 @@
           <common-progress-bar
             :class-name="$style.progress"
             :progress="progress"
+            :fill-style="progressFill"
             :handle-transition-end="handleTransitionEnd"
             :is-active-transition="isActiveTransition"
           />
@@ -40,7 +41,10 @@
 <script setup>
 import { playNext, playPrev, togglePlay } from '@renderer/core/player'
 import { status, isPlay } from '@renderer/store/player/state'
+import { appSetting } from '@renderer/store/setting'
 import usePlayProgress from '@renderer/utils/compositions/usePlayProgress'
+
+import { computed } from '@common/utils/vueTools'
 
 import ControlBtns from './components/ControlBtns.vue'
 
@@ -51,6 +55,11 @@ const {
   isActiveTransition,
   handleTransitionEnd,
 } = usePlayProgress()
+
+// 「波形进度」开关：紫金黑主题下播放进度用紫金渐变填充，其他主题退回主色实心
+const progressFill = computed(() =>
+  appSetting['player.waveProgress'] ? 'var(--color-progress-glow, var(--color-primary))' : '',
+)
 
 </script>
 

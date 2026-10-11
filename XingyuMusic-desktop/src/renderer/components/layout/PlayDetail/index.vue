@@ -1,6 +1,7 @@
 <template lang="pug">
 transition(enter-active-class="animated slideInRight" leave-active-class="animated slideOutDown" @after-enter="handleAfterEnter" @after-leave="handleAfterLeave")
-  div(v-if="isShowPlayerDetail" :class="[$style.container, { fullscreen: isFullscreen }]" @contextmenu="handleContextMenu")
+  div(v-if="isShowPlayerDetail" id="playDetailPanel" :class="[$style.container, { fullscreen: isFullscreen }]" @contextmenu="handleContextMenu")
+    layout-liquid-glass(v-if="appSetting['player.glassCover']" target="#playDetailPanel" variant="player" :cover-src="musicInfo.pic || ''")
     div(:class="$style.bg")
     //- div(:class="$style.bg" :style="bgStyle")
     //- div(:class="$style.bg2")
@@ -17,7 +18,7 @@ transition(enter-active-class="animated slideInRight" leave-active-class="animat
             p(v-if="musicInfo.album") {{ $t('player__music_album') }}{{ musicInfo.album }}
 
       transition(enter-active-class="animated fadeIn" leave-active-class="animated fadeOut")
-        LyricPlayer(v-if="visibled")
+        LyricPlayer(v-if="visibled && appSetting['player.showLyricPanel']")
       music-comment(v-if="visibled" :class="$style.comment" :show="isShowPlayComment" :music-info="playMusicInfo.musicInfo" @close="hideComment")
     transition(enter-active-class="animated fadeIn" leave-active-class="animated fadeOut")
       play-bar(v-if="visibled")
@@ -253,6 +254,10 @@ export default {
   box-shadow: 0 0 6px var(--color-primary-alpha-500);
   border-radius: 6px;
   opacity: .8;
+    border-radius: 10px;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, .5), 0 0 18px rgba(212, 176, 111, .28);
+    border: 1px solid rgba(212, 176, 111, .18);
+
 }
 .description {
   max-width: 300px;

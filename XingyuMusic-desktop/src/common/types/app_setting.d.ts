@@ -203,6 +203,9 @@ declare global {
        * 是否启用音频可视化
        */
       'player.audioVisualization': boolean
+      'player.glassCover': boolean
+      'player.waveProgress': boolean
+      'player.showLyricPanel': boolean
 
       /**
        * 定时暂停播放-是否等待歌曲播放完毕再暂停

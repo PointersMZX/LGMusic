@@ -9,11 +9,13 @@ import { setComponentId } from '@/core/common'
 import { COMPONENT_IDS } from '@/config/constant'
 import PageContent from '@/components/PageContent'
 import commonState, { type InitState as CommonState } from '@/store/common/state'
+import { useSettingValue } from '@/store/setting/hook'
 
 import Pic from './Pic'
 // import ControlBtn from './ControlBtn'
 import Lyric from './Lyric'
 import Player from './Player'
+import GlassCover from '../components/GlassCover'
 import { createStyle } from '@/utils/tools'
 import { marginLeftRaw } from './constant'
 import { useStatusbarHeight } from '@/store/common/hook'
@@ -21,6 +23,7 @@ import { useStatusbarHeight } from '@/store/common/hook'
 
 export default memo(({ componentId }: { componentId: string }) => {
   const statusBarHeight = useStatusbarHeight()
+  const showLyricPanel = useSettingValue('player.showLyricPanel')
 
   useEffect(() => {
     setComponentId(COMPONENT_IDS.playDetail, componentId)
@@ -55,7 +58,8 @@ export default memo(({ componentId }: { componentId: string }) => {
     <PageContent>
       <StatusBar />
       <View style={{ ...styles.container, paddingTop: statusBarHeight }}>
-        <View style={styles.left}>
+        <GlassCover />
+        <View style={{ ...styles.left, width: showLyricPanel ? undefined : '100%' }}>
           <Header />
           <View style={styles.leftContent}>
             <MoreBtn />
@@ -67,9 +71,15 @@ export default memo(({ componentId }: { componentId: string }) => {
             <ControlBtn />
           </View> */}
         </View>
-        <View style={styles.right}>
-          <Lyric />
-        </View>
+        {
+          showLyricPanel
+            ? (
+              <View style={styles.right}>
+                <Lyric />
+              </View>
+              )
+            : null
+        }
       </View>
     </PageContent>
   )

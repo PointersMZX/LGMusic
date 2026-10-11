@@ -293,6 +293,9 @@ declare namespace LX {
         // 进度条填充（紫金黑=紫→金渐变，其他主题=原纯色）
         '--color-progress': string
 
+        // 波形进度（player.waveProgress 开关）填充：紫金黑=紫金渐变，其他主题=主色实心
+        '--color-progress-glow': string
+
         // 主播放按钮宝石圆 / Logo 辉光（仅紫金黑定义，其他主题=无点缀）
         '--color-progress-ring': string
         '--color-logo-glow': string

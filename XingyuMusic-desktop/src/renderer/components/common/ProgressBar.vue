@@ -1,7 +1,7 @@
 <template>
   <div :class="[$style.progress, className]">
-    <div :class="[$style.progressBar, $style.progressBar2, {[$style.barTransition]: isActiveTransition}]" :style="{ transform: `scaleX(${progress || 0})` }" @transitionend="handleTransitionEnd" />
-    <div v-show="dragging" :class="[$style.progressBar, $style.progressBar3]" :style="{ transform: `scaleX(${dragProgress || 0})` }" />
+    <div :class="[$style.progressBar, $style.progressBar2, {[$style.barTransition]: isActiveTransition}]" :style="{ transform: `scaleX(${progress || 0})`, background: fillStyle || undefined }" @transitionend="handleTransitionEnd" />
+    <div v-show="dragging" :class="[$style.progressBar, $style.progressBar3]" :style="{ transform: `scaleX(${dragProgress || 0})`, background: fillStyle || undefined }" />
   </div>
   <div ref="dom_progress" :class="$style.progressMask" @mousedown="handleMsDown" />
 </template>
@@ -27,6 +27,11 @@ export default {
     handleTransitionEnd: {
       type: Function,
       required: true,
+    },
+    // 进度条填充样式（不传=主题默认；传 CSS background 值可换成紫金渐变等）
+    fillStyle: {
+      type: String,
+      default: '',
     },
   },
   setup(props) {

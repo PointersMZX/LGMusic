@@ -258,6 +258,7 @@
         "--color-glass-tint": "rgba(124, 32, 194, 0.35)",
         "--color-content-background": "#10071E",
         "--color-progress": "linear-gradient(90deg, #8A2FD6 0%, #B44BC8 45%, #D4B06F 100%)",
+        "--color-progress-glow": "linear-gradient(90deg, #8A2FD6 0%, #B44BC8 45%, #D4B06F 100%)",
         "--color-progress-ring": "linear-gradient(135deg, #8A2FD6 0%, #4A1269 55%, #D4B06F 100%)",
         "--color-logo-glow": "drop-shadow(0 0 5px rgba(212, 176, 111, 0.6)) drop-shadow(0 0 10px rgba(124, 32, 194, 0.5))",
         "--liquid-glass": "true"
@@ -524,6 +525,7 @@
         "--color-glass-base": "rgb(255, 255, 255)",
         "--liquid-glass": "false",
         "--color-progress": "var(--color-primary-light-100-alpha-400)",
+        "--color-progress-glow": "var(--color-primary)",
         "--color-progress-ring": "transparent",
         "--color-logo-glow": "none"
       }
@@ -789,6 +791,7 @@
         "--color-glass-base": "rgb(12, 12, 16)",
         "--liquid-glass": "false",
         "--color-progress": "var(--color-primary-light-100-alpha-400)",
+        "--color-progress-glow": "var(--color-primary)",
         "--color-progress-ring": "transparent",
         "--color-logo-glow": "none"
       }

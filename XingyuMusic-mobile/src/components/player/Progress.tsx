@@ -95,11 +95,12 @@ export const ProgressPlain = ({ progress, duration, buffered, paddingTop }: {
   )
 }
 
-const Progress = ({ progress, duration, buffered, paddingTop }: {
+const Progress = ({ progress, duration, buffered, paddingTop, accent = false }: {
   progress: number
   duration: number
   buffered: number
   paddingTop?: number
+  accent?: boolean
 }) => {
   // const { progress } = usePlayTimeBuffer()
   const theme = useTheme()
@@ -116,6 +117,8 @@ const Progress = ({ progress, duration, buffered, paddingTop }: {
     global.app_event.setProgress(progress * durationRef.current)
   }, [])
 
+  const fillColor = accent ? theme['c-badge-secondary'] : theme['c-primary-alpha-900']
+
   return (
     <View style={{ ...styles.progress, paddingTop }}>
       <View style={{ flex: 1 }}>
@@ -125,11 +128,11 @@ const Progress = ({ progress, duration, buffered, paddingTop }: {
           draging
             ? (
                 <>
-                  <View style={{ ...styles.progressBar, backgroundColor: theme['c-primary-light-200-alpha-900'], width: progressStr, position: 'absolute', left: 0, top: 0 }} />
-                  <View style={{ ...styles.progressBar, backgroundColor: theme['c-primary-light-100-alpha-800'], width: `${dragProgress * 100}%`, position: 'absolute', left: 0, top: 0 }} />
+                  <View style={{ ...styles.progressBar, backgroundColor: accent ? theme['c-badge-secondary'] : theme['c-primary-light-200-alpha-900'], width: progressStr, position: 'absolute', left: 0, top: 0 }} />
+                  <View style={{ ...styles.progressBar, backgroundColor: accent ? theme['c-badge-secondary'] : theme['c-primary-light-100-alpha-800'], width: `${dragProgress * 100}%`, position: 'absolute', left: 0, top: 0 }} />
                 </>
               ) : (
-                <View style={{ ...styles.progressBar, backgroundColor: theme['c-primary-alpha-900'], width: progressStr, position: 'absolute', left: 0, top: 0 }} />
+                <View style={{ ...styles.progressBar, backgroundColor: fillColor, width: progressStr, position: 'absolute', left: 0, top: 0 }} />
               )
         }
       </View>

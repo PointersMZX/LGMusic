@@ -3,7 +3,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount } from '@common/utils/vueTools'
+import { ref, watch, onMounted, onBeforeUnmount } from '@common/utils/vueTools'
 import { vertexSrc, fragmentSrc } from './shaders.js'
 
 // variant = 'player'（底栏，招牌效果）| 'toolbar'（顶栏，轻一点）
@@ -41,6 +41,11 @@ const props = defineProps({
   variant: {
     type: String,
     default: 'player',
+  },
+  // 折射源：传封面图 URL 时玻璃折射当前封面（cover-fit + 压暗），加载/跨域失败自动回退主题背景
+  coverSrc: {
+    type: String,
+    default: '',
   },
 })
 
@@ -217,11 +222,42 @@ const paintLinear = (ctx, layer, W, H) => {
   ctx.fillRect(0, 0, W, H)
 }
 
-// 栅格化「玻璃背后」的完整背景堆叠（#root 内容背景+背景图 → #container app 背景 → #right main 背景）
-// 返回是否发生变化
+// ---------- 封面折射源（blob → ImageBitmap，避免跨域污染 WebGL 纹理；失败回退主题背景） ----------
+let coverBitmap = null
+let coverToken = 0
+// 栅格化画布（声明上移：loadCover 失效 bgSig 早于 rasterizeBackground 定义处）
 let bgCanvas = null
 let blurCanvas = null
 let bgSig = ''
+const loadCover = async(src) => {
+  const token = ++coverToken
+  if (!src) {
+    coverBitmap = null
+    bgSig = ''
+    return
+  }
+  try {
+    const resp = await fetch(src, { mode: 'cors' })
+    if (!resp.ok) throw new Error('cover http ' + resp.status)
+    const bitmap = await createImageBitmap(await resp.blob(), { imageOrientation: 'from-image' })
+    if (token != coverToken) return // 已有更新请求
+    coverBitmap = bitmap
+    bgSig = '' // 失效，下一帧重栅格化
+  } catch (_) {
+    if (token == coverToken) {
+      coverBitmap = null
+      bgSig = ''
+    }
+  }
+}
+
+// 封面折射源监听（放定义之后：immediate 首帧直接带当前封面挂载）
+watch(() => props.coverSrc, (src) => {
+  void loadCover(src)
+}, { immediate: true })
+
+// 栅格化「玻璃背后」的完整背景堆叠（#root 内容背景+背景图 → #container app 背景 → #right main 背景）
+// 返回是否发生变化
 const bgColorOf = (id) => {
   const el = document.getElementById(id)
   return el ? getComputedStyle(el).backgroundColor : 'rgba(0,0,0,0)'
@@ -240,6 +276,7 @@ const rasterizeBackground = () => {
     cs.backgroundImage,
     appBg,
     mainBg,
+    coverBitmap ? 'cover' : 'theme',
   ].join('|')
   if (sig == bgSig && bgCanvas) return false
   bgSig = sig
@@ -263,6 +300,17 @@ const rasterizeBackground = () => {
   }
   if (mainBg) {
     ctx.fillStyle = mainBg
+    ctx.fillRect(0, 0, W, H)
+  }
+  // 封面进玻璃：当前封面作折射源（cover-fit 略放大 + 深色压底，玻璃折射出来即「封面活玻璃」）
+  if (coverBitmap && coverBitmap.width > 2) {
+    const scale = Math.max(W / coverBitmap.width, H / coverBitmap.height) * 1.06
+    const dw = coverBitmap.width * scale
+    const dh = coverBitmap.height * scale
+    ctx.globalAlpha = 0.92
+    ctx.drawImage(coverBitmap, (W - dw) / 2, (H - dh) / 2, dw, dh)
+    ctx.globalAlpha = 1
+    ctx.fillStyle = 'rgba(6, 4, 12, 0.45)'
     ctx.fillRect(0, 0, W, H)
   }
   // 磨砂（frosted）副本：折射源加轻微高斯模糊，玻璃才有"磨砂折射"的实体感

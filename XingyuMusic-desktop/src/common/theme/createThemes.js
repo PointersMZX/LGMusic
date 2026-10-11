@@ -46,6 +46,8 @@ const defaultThemes = [
       '--color-content-background': '#10071E',
       // 进度条填充：紫→金渐变（紫金黑的标志性元素）
       '--color-progress': 'linear-gradient(90deg, #8A2FD6 0%, #B44BC8 45%, #D4B06F 100%)',
+      // 波形进度开关（player.waveProgress）下的播放进度填充：紫金渐变
+      '--color-progress-glow': 'linear-gradient(90deg, #8A2FD6 0%, #B44BC8 45%, #D4B06F 100%)',
       // 主播放按钮：紫金渐变宝石圆
       '--color-progress-ring': 'linear-gradient(135deg, #8A2FD6 0%, #4A1269 55%, #D4B06F 100%)',
       // Logo 金色辉光（紫金黑的品牌点缀）
@@ -127,6 +129,8 @@ defaultThemes.forEach(t => {
   t.config['--color-glass-base'] ??= 'var(--color-main-background)'
   // 进度条填充：非紫金黑主题保持原纯色语义
   t.config['--color-progress'] ??= 'var(--color-primary-light-100-alpha-400)'
+  // 波形进度填充：非紫金黑主题退回主色实心（渐变开关在普通主题不引入金色）
+  t.config['--color-progress-glow'] ??= 'var(--color-primary)'
   // 主播放按钮宝石圆 / Logo 辉光：非紫金黑主题保持无点缀
   t.config['--color-progress-ring'] ??= 'transparent'
   t.config['--color-logo-glow'] ??= 'none'

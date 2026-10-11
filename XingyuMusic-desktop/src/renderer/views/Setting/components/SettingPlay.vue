@@ -34,6 +34,15 @@ dd
     base-checkbox(id="setting_player_isMediaDeviceRemovedStopPlay" :model-value="appSetting['player.isMediaDeviceRemovedStopPlay']" :label="$t('setting__play_mediaDevice_remove_stop_play')" @update:model-value="updateSetting({'player.isMediaDeviceRemovedStopPlay': $event})")
 
 dd
+  h3#play_fx {{ $t('setting__play_fx') }}
+  .gap-top
+    base-checkbox(id="setting_player_glass_cover" :model-value="appSetting['player.glassCover']" :label="$t('setting__play_fx_glass_cover')" @update:model-value="updateSetting({'player.glassCover': $event})")
+  .gap-top
+    base-checkbox(id="setting_player_wave_progress" :model-value="appSetting['player.waveProgress']" :label="$t('setting__play_fx_wave_progress')" @update:model-value="updateSetting({'player.waveProgress': $event})")
+  .gap-top
+    base-checkbox(id="setting_player_show_lyric_panel" :model-value="appSetting['player.showLyricPanel']" :label="$t('setting__play_fx_show_lyric_panel')" @update:model-value="updateSetting({'player.showLyricPanel': $event})")
+
+dd
   h3#basic_play_quality {{ $t('setting__play_playQuality') }}
   div
     base-checkbox.gap-left(

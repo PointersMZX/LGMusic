@@ -219,6 +219,21 @@ declare global {
       'player.isShowBluetoothFullLyric': boolean
 
       /**
+       * 播放器效果-封面进玻璃：播放详情页封面作背景层（暗化+玻璃质感）
+       */
+      'player.glassCover': boolean
+
+      /**
+       * 播放器效果-波形进度：进度条填充用品牌金色
+       */
+      'player.waveProgress': boolean
+
+      /**
+       * 播放器效果-歌词面板：显示歌词区（横屏右栏/竖屏第二页）
+       */
+      'player.showLyricPanel': boolean
+
+      /**
        * 播放详情页-是否缩放当前播放的歌词行
        */
       // 'playDetail.isZoomActiveLrc': boolean

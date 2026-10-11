@@ -8,8 +8,10 @@ import Player from './Player'
 import PagerView, { type PagerViewOnPageSelectedEvent } from 'react-native-pager-view'
 import Pic from './Pic'
 import Lyric from './Lyric'
+import GlassCover from '../components/GlassCover'
 import { screenkeepAwake, screenUnkeepAwake } from '@/utils/nativeModules/utils'
 import commonState, { type InitState as CommonState } from '@/store/common/state'
+import { useSettingValue } from '@/store/setting/hook'
 import { createStyle } from '@/utils/tools'
 // import { useTheme } from '@/store/theme/hook'
 
@@ -32,6 +34,8 @@ export default memo(({ componentId }: { componentId: string }) => {
   // const theme = useTheme()
   const [pageIndex, setPageIndex] = useState(0)
   const showLyricRef = useRef(false)
+  const showLyricPanel = useSettingValue('player.showLyricPanel')
+  const glassCover = useSettingValue('player.glassCover')
 
   const onPageSelected = ({ nativeEvent }: PagerViewOnPageSelectedEvent) => {
     setPageIndex(nativeEvent.position)
@@ -74,6 +78,7 @@ export default memo(({ componentId }: { componentId: string }) => {
     <>
       <Header />
       <View style={styles.container}>
+        {glassCover ? <GlassCover /> : null}
         <PagerView
           onPageSelected={onPageSelected}
           // onPageScrollStateChanged={onPageScrollStateChanged}
@@ -82,9 +87,15 @@ export default memo(({ componentId }: { componentId: string }) => {
           <View collapsable={false}>
             <Pic componentId={componentId} />
           </View>
-          <View collapsable={false}>
-            <LyricPage activeIndex={pageIndex} />
-          </View>
+          {
+            showLyricPanel
+              ? (
+                <View collapsable={false}>
+                  <LyricPage activeIndex={pageIndex} />
+                </View>
+                )
+              : null
+          }
         </PagerView>
         {/* <View style={styles.pageIndicator} nativeID={NAV_SHEAR_NATIVE_IDS.playDetail_pageIndicator}>
           <View style={{ ...styles.pageIndicatorItem, backgroundColor: pageIndex == 0 ? theme['c-primary-light-100-alpha-700'] : theme['c-primary-alpha-900'] }}></View>
