@@ -20,8 +20,8 @@ const defaultThemes = [
       primary: 'rgb(124, 32, 194)',
       font: 'rgb(240, 236, 255)',
       // 舞台底色改为不透明，杜绝「透过内容看到桌面壁纸」；紫金渐变舞台光铺在不透明底色之上
-      '--color-app-background': 'rgba(22, 5, 38, 0.55)',
-      '--color-main-background': 'rgba(16, 7, 30, 0.82)',
+      '--color-app-background': '#100620',
+      '--color-main-background': '#1B0B30',
       '--color-nav-font': 'var(--color-primary-light-300)',
       // 液态玻璃：紫色舞台光 + 金色微光，给玻璃底栏折射提供景深
       // 高 alpha 渐变 + 不透明内容底：紫金氛围直接可见，玻璃折射源带色
@@ -40,8 +40,8 @@ const defaultThemes = [
       // 玻璃边缘高光（金色发丝线），其他主题未定义此变量时走 CSS fallback
       '--color-glass-edge': 'rgba(232, 208, 158, 0.9)',
       // 玻璃底板：半透磨砂（折射源=不透明紫金舞台，玻璃呈「磨砂玻璃」质感；不再是透到壁纸的薄膜）
-      '--color-glass-base': 'rgba(24, 8, 46, 0.62)',
-      '--color-glass-tint': 'rgba(124, 32, 194, 0.28)',
+      '--color-glass-base': '#221045',
+      '--color-glass-tint': 'rgba(124, 32, 194, 0.18)',
       // 舞台底：不透明深紫黑（覆盖桌面壁纸），紫金渐变直接透出
       '--color-content-background': '#17092B',
       // 进度条填充：紫→金渐变（紫金黑的标志性元素）

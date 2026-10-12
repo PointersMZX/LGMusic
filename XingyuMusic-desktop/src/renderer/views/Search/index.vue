@@ -193,9 +193,8 @@ export default {
   flex-flow: column nowrap;
   gap: 4px;
   padding: 10px 8px;
-  background-color: color-mix(in srgb, var(--color-button-background) 55%, transparent);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  // 无 WebGL 环境下 backdrop 磨砂发雾：改实心底（按钮色+内容底混合）
+  background-color: color-mix(in srgb, var(--color-button-background) 88%, var(--color-content-background));
   border-radius: 10px;
 }
 
