@@ -7,34 +7,34 @@
    要点：底栏/顶栏的底板半透磨砂，折射源=不透明紫金舞台（#root 底色不透明，杜绝透到桌面壁纸）；
    导航栏（#left）不做磨砂——导航要清晰，只用纯色面板 + 金色边缘光。 */
 
-/* 顶栏：玻璃面板 */
+/* 顶栏：玻璃面板（WebGL 不可用时走此 CSS 磨砂兜底：克制参数，避免软件合成下整体发雾发暗） */
 #toolbar {
-  backdrop-filter: blur(28px) saturate(1.8);
-  -webkit-backdrop-filter: blur(28px) saturate(1.8);
+  backdrop-filter: blur(14px) saturate(1.25);
+  -webkit-backdrop-filter: blur(14px) saturate(1.25);
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.03) 60%, transparent 100%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.10) 0%, rgba(255, 255, 255, 0.02) 60%, transparent 100%),
     var(--color-glass-base, var(--color-main-background));
   border-bottom: 1px solid var(--color-glass-edge, transparent);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.26),
-    0 4px 18px rgba(0, 0, 0, 0.22);
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    0 4px 18px rgba(0, 0, 0, 0.12);
 }
 
-/* 底栏：悬浮圆角玻璃板（磨砂 + 折射 + 金边 + 紫晕） */
+/* 底栏：悬浮圆角玻璃板（WebGL 不可用时的 CSS 兜底：轻磨砂+淡紫晕） */
 #player {
-  backdrop-filter: blur(36px) saturate(2);
-  -webkit-backdrop-filter: blur(36px) saturate(2);
+  backdrop-filter: blur(18px) saturate(1.2);
+  -webkit-backdrop-filter: blur(18px) saturate(1.2);
   margin: 8px 10px 10px;
   border-radius: 14px;
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.34) 0%, rgba(255, 255, 255, 0.07) 38%, var(--color-glass-tint, transparent) 100%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0.03) 38%, var(--color-glass-tint, transparent) 100%),
     var(--color-glass-base, var(--color-main-background));
   border: 1px solid var(--color-glass-edge, transparent);
   box-shadow:
-    inset 0 2px 0 rgba(255, 255, 255, 0.34),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.08),
-    0 0 44px rgba(124, 32, 194, 0.5),
-    0 0 88px rgba(212, 176, 111, 0.18);
+    inset 0 2px 0 rgba(255, 255, 255, 0.16),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.06),
+    0 0 32px rgba(124, 32, 194, 0.26),
+    0 0 64px rgba(212, 176, 111, 0.10);
 }
 
 /* 导航栏：清晰面板（不磨砂）+ 金色右缘发丝线 */
