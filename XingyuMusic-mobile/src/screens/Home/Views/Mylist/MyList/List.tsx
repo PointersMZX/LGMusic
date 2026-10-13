@@ -75,6 +75,8 @@ export default ({ onShowMenu }: {
 }) => {
   const flatListRef = useRef<FlatList>(null)
   const allList = useMyList()
+  // 不展示用户自建歌单（仅试听列表/喜欢列表等系统列表）
+  const showList = allList.filter((item): item is LX.List.MyDefaultListInfo | LX.List.MyLoveListInfo => !('locationUpdateTime' in item))
   const activeListId = useActiveListId()
 
   const handleToggleList = (item: LX.List.MyListInfo) => {
@@ -120,7 +122,7 @@ export default ({ onShowMenu }: {
       ref={flatListRef}
       onScroll={handleScroll}
       style={styles.container}
-      data={allList}
+      data={showList}
       maxToRenderPerBatch={9}
       // updateCellsBatchingPeriod={80}
       windowSize={9}

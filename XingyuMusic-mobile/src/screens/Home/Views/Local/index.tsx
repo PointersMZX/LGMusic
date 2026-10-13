@@ -9,7 +9,7 @@ import { useI18n } from '@/lang'
 import { createStyle, confirmDialog, toast } from '@/utils/tools'
 import { getLocalDirs } from '@/utils/data'
 import { getListMusics } from '@/utils/listManage'
-import playerState from '@/store/player/state'
+import { usePlayMusicInfo } from '@/store/player/hook'
 import { playList } from '@/core/player/player'
 import { useListFetching } from '@/store/list/hook'
 import { useSettingValue } from '@/store/setting/hook'
@@ -221,11 +221,12 @@ export default memo(() => {
     void playList(LOCAL_LIST_ID, resolveFullIndex(displayIndex))
   }
 
-  const { playMusicInfo, playInfo } = playerState
+  // 响应式订阅播放状态：切歌/自动下一曲立即重渲染（原直接读模块 state 不触发重渲染，
+  // 导致「上一首还紫着、新歌不变色」）
+  const playMusicInfo = usePlayMusicInfo()
   const isPlayList = playMusicInfo.listId == LOCAL_LIST_ID
-  const playIndex = isPlayList ? playInfo.playIndex : -1
-  // 当前正在播放的歌（按 id 匹配，搜索过滤后仍正确高亮）
-  const activeId = isPlayList ? songs[playIndex]?.id : undefined
+  // 当前正在播放的歌按 id 高亮：不依赖 songs 数组下标，重扫/排序/搜索过滤后不会错位
+  const activeId = isPlayList ? (playMusicInfo.musicInfo as { id?: string | null })?.id : undefined
   const fetching = useListFetching(LOCAL_LIST_ID)
 
   // 搜索输入：改词时退出管理模式（避免管理态 + 过滤态并存）

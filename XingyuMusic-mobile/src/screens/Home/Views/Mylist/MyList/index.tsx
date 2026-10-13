@@ -44,7 +44,6 @@ export default () => {
           <ListImportExport ref={listImportExportRef} />
           <ListMenu
             ref={listMenuRef}
-            onNew={index => listNameEditRef.current?.showCreate(index)}
             onRename={info => listNameEditRef.current?.show(info)}
             onSort={info => listMusicSortRef.current?.show(info)}
             onDuplicateMusic={info => duplicateMusicRef.current?.show(info)}

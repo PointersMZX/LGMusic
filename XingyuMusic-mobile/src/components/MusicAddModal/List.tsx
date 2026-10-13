@@ -1,13 +1,9 @@
-import { useMemo, useState } from 'react'
-import { ScrollView, TouchableOpacity, View } from 'react-native'
+import { useMemo } from 'react'
+import { ScrollView, View } from 'react-native'
 
-import Text from '@/components/common/Text'
 import { useMyList } from '@/store/list/hook'
-import ListItem, { styles as listStyles } from './ListItem'
-import CreateUserList from './CreateUserList'
+import ListItem from './ListItem'
 import { useWindowSize } from '@/utils/hooks'
-import { useTheme } from '@/store/theme/hook'
-import { useI18n } from '@/lang'
 import { createStyle } from '@/utils/tools'
 import { scaleSizeW } from '@/utils/pixelRatio'
 
@@ -25,37 +21,13 @@ const styles = createStyle({
 const MIN_WIDTH = scaleSizeW(150)
 const PADDING = styles.list.paddingLeft + styles.list.paddingRight
 
-
-const EditListItem = ({ itemWidth }: {
-  itemWidth: number
-}) => {
-  const [isEdit, setEdit] = useState(false)
-  const theme = useTheme()
-  const t = useI18n()
-
-  return (
-    <View style={{ ...listStyles.listItem, width: itemWidth }}>
-      <TouchableOpacity
-        style={{ ...listStyles.button, borderColor: theme['c-primary-light-200-alpha-700'], borderStyle: 'dashed' }}
-        onPress={() => { setEdit(true) }}
-      >
-        <Text style={{ opacity: isEdit ? 0 : 1 }} numberOfLines={1} size={14} color={theme['c-button-font']}>{t('list_create')}</Text>
-      </TouchableOpacity>
-      {
-        isEdit
-          ? <CreateUserList isEdit={isEdit} onHide={() => { setEdit(false) }} />
-          : null
-      }
-    </View>
-  )
-}
-
 export default ({ musicInfo, onPress }: {
   musicInfo: LX.Music.MusicInfo
   onPress: (listInfo: LX.List.MyListInfo) => void
 }) => {
   const windowSize = useWindowSize()
-  const allList = useMyList()
+  // 不展示用户自建歌单（仅试听列表/喜欢列表等系统列表）
+  const allList = useMyList().filter((item): item is LX.List.MyDefaultListInfo | LX.List.MyLoveListInfo => !('locationUpdateTime' in item))
   const itemWidth = useMemo(() => {
     let w = Math.floor(windowSize.width * 0.9 - PADDING)
     let n = Math.floor(w / MIN_WIDTH)
@@ -67,7 +39,6 @@ export default ({ musicInfo, onPress }: {
     <ScrollView style={{ flexGrow: 0 }}>
       <View style={styles.list} onStartShouldSetResponder={() => true}>
         { allList.map(info => <ListItem key={info.id} listInfo={info} musicInfo={musicInfo} onPress={onPress} width={itemWidth} />) }
-        <EditListItem itemWidth={itemWidth} />
       </View>
     </ScrollView>
   )

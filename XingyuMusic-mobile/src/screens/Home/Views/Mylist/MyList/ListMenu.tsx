@@ -19,7 +19,6 @@ const menuItemWidth = scaleSizeW(110)
 
 
 export interface ListMenuProps {
-  onNew: (position: number) => void
   onRename: (listInfo: LX.List.UserListInfo) => void
   onSort: (listInfo: LX.List.MyListInfo) => void
   onDuplicateMusic: (listInfo: LX.List.MyListInfo) => void
@@ -38,7 +37,6 @@ export type {
 }
 
 export default forwardRef<ListMenuType, ListMenuProps>(({
-  onNew,
   onRename,
   onSort,
   onDuplicateMusic,
@@ -87,7 +85,6 @@ export default forwardRef<ListMenuType, ListMenuProps>(({
     }
 
     setMenus([
-      { action: 'new', label: t('list_create') },
       { action: 'rename', disabled: !rename, label: t('list_rename') },
       { action: 'sort', label: t('list_sort') },
       { action: 'duplicateMusic', label: t('lists__duplicate') },
@@ -103,9 +100,6 @@ export default forwardRef<ListMenuType, ListMenuProps>(({
   const handleMenuPress = ({ action }: typeof menus[number]) => {
     const selectInfo = selectInfoRef.current
     switch (action) {
-      case 'new':
-        onNew(Math.max(selectInfo.index - 1, 0))
-        break
       case 'rename':
         onRename(selectInfo.listInfo as LX.List.UserListInfo)
         break
