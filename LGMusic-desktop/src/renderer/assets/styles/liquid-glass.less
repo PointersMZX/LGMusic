@@ -1,0 +1,67 @@
+/* ===== LG Music · 液态玻璃 v3 =====
+   观感基准 = Metric v1.4.3 液态玻璃底栏。
+   三层参数全部走主题键：
+   - --color-glass-base   玻璃底板（紫金黑=半透磨砂 rgba 0.42，折射源为不透明紫金舞台；其他主题=不透明 main-background）
+   - --color-glass-tint   紫色玻璃染色（紫金黑=0.35，其他主题=transparent）
+   - --color-glass-edge   金色发丝描边（紫金黑=0.9，其他主题=transparent）
+   要点：底栏/顶栏的底板半透磨砂，折射源=不透明紫金舞台（#root 底色不透明，杜绝透到桌面壁纸）；
+   导航栏（#left）不做磨砂——导航要清晰，只用纯色面板 + 金色边缘光。 */
+
+/* 顶栏：玻璃面板 */
+#toolbar {
+  backdrop-filter: blur(28px) saturate(1.8);
+  -webkit-backdrop-filter: blur(28px) saturate(1.8);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.03) 60%, transparent 100%),
+    var(--color-glass-base, var(--color-main-background));
+  border-bottom: 1px solid var(--color-glass-edge, transparent);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.26),
+    0 4px 18px rgba(0, 0, 0, 0.22);
+}
+
+/* 底栏：悬浮圆角玻璃板（磨砂 + 折射 + 金边 + 紫晕） */
+#player {
+  backdrop-filter: blur(36px) saturate(2);
+  -webkit-backdrop-filter: blur(36px) saturate(2);
+  margin: 8px 10px 10px;
+  border-radius: 14px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.34) 0%, rgba(255, 255, 255, 0.07) 38%, var(--color-glass-tint, transparent) 100%),
+    var(--color-glass-base, var(--color-main-background));
+  border: 1px solid var(--color-glass-edge, transparent);
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.34),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.08),
+    0 0 44px rgba(124, 32, 194, 0.5),
+    0 0 88px rgba(212, 176, 111, 0.18);
+}
+
+/* 导航栏：清晰面板（不磨砂）+ 金色右缘发丝线 */
+#left {
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.04) 0%, transparent 40%),
+    var(--color-main-background, rgba(0, 0, 0, 0.5));
+  border-right: 1px solid var(--color-glass-edge, transparent);
+}
+
+/* ===== WebGL 液态玻璃激活态 =====
+   LiquidGlass 组件（canvas 叠层）启用时，documentElement 加 .liquid-glass-on，
+   此时把顶栏/底栏的 CSS 磨砂玻璃底板撤掉——玻璃体改由 GPU 着色器绘制
+   （SDF 折射 + 7 色色散 + 边缘流光 + 指针高光），只保留外圈紫晕阴影与圆角。 */
+.liquid-glass-on {
+  #toolbar {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    background: transparent;
+    border-bottom: none;
+  }
+
+  #player {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    background: transparent;
+    border: none;
+  }
+}
+

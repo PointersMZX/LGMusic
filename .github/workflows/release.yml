@@ -1,4 +1,4 @@
-# XingyuMusic 发布流水线
+# LGMusic 发布流水线
 # 触发：推送 v* tag → CI 打 Android APK，并创建 GitHub Release
 # Windows 端（NSIS 安装版）由维护者自行上传到 Release 页面
 on:
@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-24.04
     defaults:
       run:
-        working-directory: XingyuMusic-mobile
+        working-directory: LGMusic-mobile
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -86,8 +86,8 @@ jobs:
             found=1
             base=$(basename "$f" .apk)
             case "$base" in
-              app-release) cp "$f" "$DST/XingyuMusic-v${APP_VERSION}-android.apk" ;;
-              app-*-release) abi="${base#app-}"; abi="${abi%-release}"; cp "$f" "$DST/XingyuMusic-v${APP_VERSION}-android-${abi}.apk" ;;
+              app-release) cp "$f" "$DST/LGMusic-v${APP_VERSION}-android.apk" ;;
+              app-*-release) abi="${base#app-}"; abi="${abi%-release}"; cp "$f" "$DST/LGMusic-v${APP_VERSION}-android-${abi}.apk" ;;
               *) cp "$f" "$DST/$base.apk" ;;
             esac
             echo "已打包: $(basename "$f")"
@@ -109,23 +109,22 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
-          name: XingyuMusic ${{ github.ref_name }}
+          name: LGMusic ${{ github.ref_name }}
           draft: false
           make_latest: true
           files: release-apk/*.apk
           body: |
-            XingyuMusic v1.0.1（补丁）
+            LGMusic v1.1.0（甘露音乐）
 
-            - Windows 液态玻璃重做：修复「太透」看到桌面壁纸的问题（紫金黑舞台改为不透明深底），玻璃底栏/顶栏磨砂 + 折射 + 七彩色散 + 金色流光，更有「液态玻璃」质感。
-            - 本地音乐（双端）：只扫描「文件名 + 时长」（不再读专辑/歌手、不加载专辑图），无封面统一显示星雨音乐标识；新增 4 种默认排序（由旧至新 / 由新至旧 / A→Z / Z→A），可长按进入多选、拖动「≡」把手自定义排序、勾选删除（仅从列表移除，保留本地文件）；修复歌曲编号偶现「…」。
-            - 移动端紫金黑：菜单（侧滑）页配色修复——顶部「XingyuMusic」标题清晰、菜单区不再刺眼亮粉，阅读更舒适。
-            - 本地音乐搜索（双端）：本地音乐页新增按歌名实时搜索，快速定位歌曲；搜索时排序/管理自动收起。
-            - 稳定性：修复 Win7 版（Electron 22）启动即退出的问题。
+            - 品牌更新：应用更名为「甘露音乐（LG Music）」，界面、标题与关于页全部切换为新品牌。Android 端需先卸载旧版本再安装新版；Windows 端更新后设置将重置（启用新数据目录）。
+            - 修复移动端本地音乐切歌后歌曲高亮不刷新的问题（之前播放完的歌仍高亮、新歌不变色）。
+            - 错误提示的反馈渠道改为「官方群聊或作者本人」：遇到错误时截图，附上具体操作步骤以及「设置-错误日志」的内容反馈即可。
+            - 移动端「我的」列表：仅显示试听列表/喜欢列表等系统列表，自建歌单及其创建入口已移除。
 
             - Android：APK（universal + 分 ABI；当前使用调试签名，正式上架前替换为自有签名）
-            - Windows：安装版（NSIS）由维护者手动上传，请留意补充
+            - Windows：安装版（NSIS）与绿色版（7z）由维护者手动上传到 Release 页面，请留意补充
 
-            桌面端旧版提示/更新检查数据源：仓库根 `publish/version.json`。
+            桌面端更新检查数据源：仓库根 `publish/version.json`。
 
       - name: 失败诊断：日志推到 ci-logs 分支（匿名可读 raw，排查后删除）
         if: failure()
@@ -133,7 +132,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           {
-            echo "# XingyuMusic CI 失败诊断（run ${GITHUB_RUN_ID}，第 ${GITHUB_RUN_ATTEMPT} 次）"
+            echo "# LGMusic CI 失败诊断（run ${GITHUB_RUN_ID}，第 ${GITHUB_RUN_ATTEMPT} 次）"
             echo
             echo "## gradle 日志（尾 400 行）"
             echo '```'
@@ -147,8 +146,8 @@ jobs:
           } > /tmp/diag.md
           ROOT=$(git rev-parse --show-toplevel)
           cd "$ROOT"
-          git config user.name "xingyu-ci-bot"
-          git config user.email "xingyu-ci-bot@users.noreply.github.com"
+          git config user.name "lg-music-ci-bot"
+          git config user.email "lg-music-ci-bot@users.noreply.github.com"
           git checkout --orphan ci-logs 2>/dev/null || git checkout -B ci-logs
           git rm -rf --cached . > /dev/null 2>&1 || true
           rm -f diag.md && cp /tmp/diag.md diag.md
