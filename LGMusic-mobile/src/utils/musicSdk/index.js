@@ -35,7 +35,7 @@ const sources = {
   kg,
   tx,
   wy,
-  mg,  xm,
+  mg,
 }
 export default {
   ...sources,
