@@ -3,8 +3,6 @@ import kg from './kg/index'
 import tx from './tx/index'
 import wy from './wy/index'
 import mg from './mg/index'
-import bd from './bd/index'
-import xm from './xm'
 import { supportQuality } from './api-source'
 import { versionChars } from './versionChars'
 
@@ -31,22 +29,13 @@ const sources = {
       name: '咪咕音乐',
       id: 'mg',
     },
-    {
-      name: '虾米音乐',
-      id: 'xm',
-    },
-    // {
-    //   name: '百度音乐',
-    //   id: 'bd',
-    // },
+
   ],
   kw,
   kg,
   tx,
   wy,
   mg,
-  bd,
-  xm,
 }
 export default {
   ...sources,
@@ -64,9 +53,8 @@ export default {
     const trimStr = str => typeof str == 'string' ? str.trim() : str
     const musicName = trimStr(name)
     const tasks = []
-    const excludeSource = ['xm']
     for (const source of sources.sources) {
-      if (!sources[source.id].musicSearch || source.id == s || excludeSource.includes(source.id)) continue
+      if (!sources[source.id].musicSearch || source.id == s) continue
       tasks.push(sources[source.id].musicSearch.search(`${musicName} ${singer || ''}`.trim(), 1, limit).catch(_ => null))
     }
     return (await Promise.all(tasks)).filter(s => s)
