@@ -45,4 +45,4 @@ for (const source of music.sources) {
   })
   maxPages[source.id as LX.OnlineSource] = 0
 }
-sources.push('all')
+sources.unshift('all')

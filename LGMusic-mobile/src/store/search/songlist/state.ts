@@ -56,6 +56,6 @@ for (const source of music.sources) {
   }
   maxPages[source.id as LX.OnlineSource] = 0
 }
-state.sources.push('all')
+state.sources.unshift('all')
 
 export default state

@@ -21,7 +21,7 @@ for (const source of music.sources) {
   sources.push(source.id as LX.OnlineSource)
   sourceList[source.id as LX.OnlineSource] = reactive<string[]>([])
 }
-sources.push('all')
+sources.unshift('all')
 
 
 const setList = (source: LX.OnlineSource, list: string[]): string[] => {

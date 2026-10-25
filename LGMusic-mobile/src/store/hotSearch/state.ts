@@ -24,6 +24,6 @@ for (const source of musicSdk.sources) {
   state.sources.push(source.id as LX.OnlineSource)
   state.sourceList[source.id as LX.OnlineSource] = []
 }
-state.sources.push('all')
+state.sources.unshift('all')
 
 export default state
