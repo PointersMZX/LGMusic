@@ -95,6 +95,9 @@ const buildHttpPromose = (url, options) => {
     }).then(ro => {
       obj.requestObj = ro
       if (obj.isCancelled) obj.cancelHttp()
+    }).catch(err => {
+      // 请求构造阶段同步失败（如 URL 编码类异常）时保证 promise 一定 settle，避免界面永久「导入中」
+      if (obj.cancelFn) obj.cancelFn(err)
     })
   })
   return obj
@@ -282,6 +285,9 @@ const fetchData = async(url, method, {
   timeout = 15000,
   ...options
 }, callback) => {
+  // URL 含中文等非 ASCII 字符时先做百分号编码，否则底层 https.request 同步抛
+  // ERR_UNESCAPED_CHARACTERS，请求 promise 永不 settle（界面卡死）
+  url = url.replace(/[\u0080-\uffff]/g, c => encodeURIComponent(c))
   // console.log(url, options)
   console.log('---start---', url)
   headers = Object.assign({}, headers)
