@@ -18,9 +18,6 @@ material-modal(:show="modelValue" bg-close teleport="#view" @close="handleClose"
     div(v-else :class="$style.content")
       div(:class="$style.noitem") {{ $t('user_api__noitem') }}
     div(:class="$style.note")
-      p(:class="[$style.ruleLink]")
-        | {{ $t('user_api__readme') }}
-        span.hover.underline(aria-label="https://lxmusic.toside.cn/desktop/custom-source" @click="handleOpenUrl('https://lyswhut.github.io/lx-music-doc/desktop/custom-source')") FAQ
       p {{ $t('user_api__note') }}
     div(:class="$style.footer")
       base-btn(:class="$style.footerBtn" @click="isShowOnlineImportModal = true") {{ $t('user_api__btn_import_online') }}
@@ -32,7 +29,6 @@ material-modal(:show="modelValue" bg-close teleport="#view" @close="handleClose"
 <script>
 import { importUserApi, removeUserApi, showSelectDialog, setAllowShowUserApiUpdateAlert } from '@renderer/utils/ipc'
 import { readFile } from '@common/utils/nodejs'
-import { openUrl } from '@common/utils/electron'
 import apiSourceInfo from '@renderer/utils/musicSdk/api-source-info'
 import { userApi } from '@renderer/store'
 import { appSetting, updateSetting } from '@renderer/store/setting'
@@ -108,9 +104,6 @@ export default {
     },
     handleClose() {
       this.$emit('update:modelValue', false)
-    },
-    handleOpenUrl(url) {
-      void openUrl(url)
     },
     handleChangeAllowUpdateAlert(api, enable) {
       void setAllowShowUserApiUpdateAlert(api.id, enable)

@@ -17,9 +17,6 @@ import settingState from '@/store/setting/state'
 const Content = () => {
   const theme = useTheme()
 
-  const openHomePage = () => {
-    void openUrl('https://github.com/lyswhut/lx-music-mobile#readme')
-  }
   const openLicensePage = () => {
     void openUrl('http://www.apache.org/licenses/LICENSE-2.0')
   }
@@ -51,7 +48,7 @@ const Content = () => {
         <Text selectable style={styles.bold} >五、免责声明{'\n'}</Text>
         <Text selectable style={styles.text} >5.1 由于使用本项目产生的包括由于本协议或由于使用或无法使用本项目而引起的任何性质的任何直接、间接、特殊、偶然或结果性损害（包括但不限于因商誉损失、停工、计算机故障或故障引起的损害赔偿，或任何及所有其他商业损害或损失）由使用者负责。{'\n'}</Text>
         <Text selectable style={styles.bold} >六、使用限制{'\n'}</Text>
-        <Text selectable style={styles.text} >6.1 本项目完全免费，且开源发布于 <Text onPress={openHomePage} style={textLinkStyle}>GitHub</Text> 面向全世界人用作对技术的学习交流，本项目不对项目内的技术可能存在违反当地法律法规的行为作保证。{'\n'}</Text>
+        <Text selectable style={styles.text} >6.1 本项目完全免费，且开源发布于 <Text style={textLinkStyle}>GitHub</Text> 面向全世界人用作对技术的学习交流，本项目不对项目内的技术可能存在违反当地法律法规的行为作保证。{'\n'}</Text>
         <Text selectable style={styles.text} >6.2 <Text style={styles.bold}>禁止在违反当地法律法规的情况下使用本项目</Text>，对于使用者在明知或不知当地法律法规不允许的情况下使用本项目所造成的任何违法违规行为由使用者承担，本项目不承担由此造成的任何直接、间接、特殊、偶然或结果性责任。{'\n'}</Text>
         <Text selectable style={styles.bold} >七、版权保护{'\n'}</Text>
         <Text selectable style={styles.text} >7.1 音乐平台不易，请尊重版权，支持正版。{'\n'}</Text>

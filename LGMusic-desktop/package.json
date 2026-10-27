@@ -89,10 +89,6 @@
       "CFBundleName": "LGMusic"
     }
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/lyswhut/lx-music-desktop.git"
-  },
   "keywords": [
     "music-player",
     "electron-app",
@@ -102,10 +98,6 @@
     "name": "LG Music"
   },
   "license": "Apache-2.0",
-  "bugs": {
-    "url": "https://github.com/lyswhut/lx-music-desktop/issues"
-  },
-  "homepage": "https://github.com/lyswhut/lx-music-desktop#readme",
   "devDependencies": {
     "@tsconfig/recommended": "^1.0.13",
     "@types/better-sqlite3": "^7.6.13",

@@ -15,7 +15,7 @@ const options = {
   beforePack,
   afterPack,
   protocols: {
-    name: 'lx-music-protocol',
+    name: 'LG Music',
     schemes: [
       'lxmusic',
     ],
@@ -79,7 +79,7 @@ const winOptions = {
  */
 const linuxOptions = {
   linux: {
-    maintainer: 'lyswhut <lyswhut@qq.com>',
+    maintainer: 'LG Music',
     // artifactName: '${productName}-${version}.${env.ARCH}.${ext}',
     icon: './resources/icons',
     category: 'Utility;AudioVideo;Audio;Player;Music;',

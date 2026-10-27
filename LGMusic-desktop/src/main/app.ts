@@ -205,7 +205,6 @@ export const listenerAppEvent = (startApp: () => void) => {
     })
 
     // disable create dictionary
-    // https://github.com/lyswhut/lx-music-desktop/issues/773
     contents.session.setSpellCheckerDictionaryDownloadURL('http://0.0.0.0')
   })
 

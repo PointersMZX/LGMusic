@@ -32,8 +32,6 @@ exports.afterPack = async() => {
 const replaceSqliteLib = async(arch) => {
   // console.log(await fs.readdir(path.join(context.appOutDir, './resources/')))
   // if (context.electronPlatformName != 'linux' || context.arch != Arch.arm64) return
-  // https://github.com/lyswhut/lx-music-desktop/issues/1102
-  // https://github.com/lyswhut/lx-music-desktop/issues/1161
   console.log('replace sqlite lib...')
   const filePath = path.join(__dirname, `./lib/better_sqlite3_${process.platform}-${arch}.node`)
   console.log(filePath)
