@@ -5,6 +5,10 @@
 //! 3. black   纯黑（不做液态玻璃）
 //! 4. 自定义  用户通过「添加主题」创建（RGB 取色器任选色），可在编辑器中开关「启用液态玻璃」
 //!    （--liquid-glass 键；桌面端由 LiquidGlass WebGL 组件消费，移动端由 c-glass-* 变量消费）
+//!
+//! v1.2.0 液态玻璃体系（甘露玻璃）：
+//! - --glass-flow        流动舞台光（#root 光斑层缓慢漂移，为玻璃提供活的折射源；仅玻璃主题开）
+//! - 其余玻璃键沿用 --liquid-glass / --color-glass-base / --color-glass-tint / --color-glass-edge
 
 const fs = require('fs')
 const path = require('path')
@@ -52,6 +56,8 @@ const defaultThemes = [
       '--color-logo-glow': 'drop-shadow(0 0 5px rgba(212, 176, 111, 0.6)) drop-shadow(0 0 10px rgba(124, 32, 194, 0.5))',
       // 液态玻璃（WebGL SDF 折射 + 7 色色散 + 边缘流光 + 指针高光）：招牌效果，默认开
       '--liquid-glass': 'true',
+      // 流动舞台光：紫金光斑在背景缓慢漂移（玻璃折射源的"液态"根基）
+      '--glass-flow': 'true',
     },
   },
   {
@@ -83,6 +89,7 @@ const defaultThemes = [
       '--color-content-background': '#f5f5f7',
       '--color-glass-base': 'rgb(255, 255, 255)',
       '--liquid-glass': 'false',
+      '--glass-flow': 'false',
     },
   },
   {
@@ -114,6 +121,7 @@ const defaultThemes = [
       '--color-content-background': '#0a0a0d',
       '--color-glass-base': 'rgb(12, 12, 16)',
       '--liquid-glass': 'false',
+      '--glass-flow': 'false',
     },
   },
 ]
@@ -132,6 +140,8 @@ defaultThemes.forEach(t => {
   t.config['--color-logo-glow'] ??= 'none'
   // 液态玻璃默认关（仅 xingyu 显式开启；自定义主题可在编辑器里开）
   t.config['--liquid-glass'] ??= 'false'
+  // 流动舞台光默认关（跟随液态玻璃主题）
+  t.config['--glass-flow'] ??= 'false'
 })
 
 const themes = defaultThemes.map(({ config: { primary, font, ...extInfo }, ...themeInfo }) => {

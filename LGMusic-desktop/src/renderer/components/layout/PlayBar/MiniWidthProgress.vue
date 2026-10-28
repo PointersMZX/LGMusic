@@ -28,7 +28,7 @@
           <use xlink:href="#icon-prevMusic" />
         </svg>
       </div>
-      <div :class="$style.playBtn" :aria-label="isPlay ? $t('player__pause') : $t('player__play')" @click="togglePlay">
+      <div ref="dom_magnet" :class="$style.playBtn" :aria-label="isPlay ? $t('player__pause') : $t('player__play')" @click="togglePlay">
         <svg v-if="isPlay" version="1.1" xmlns="http://www.w3.org/2000/svg" xlink="http://www.w3.org/1999/xlink" height="100%" viewBox="0 0 1024 1024" space="preserve">
           <use xlink:href="#icon-pause" />
         </svg>
@@ -46,12 +46,13 @@
 </template>
 
 <script>
-import { computed } from '@common/utils/vueTools'
+import { computed, ref } from '@common/utils/vueTools'
 import { useRouter } from '@common/utils/vueRouter'
 import { clipboardWriteText } from '@common/utils/electron'
 import ControlBtns from './ControlBtns.vue'
 import PlayProgress from './PlayProgress.vue'
 import usePlayProgress from '@renderer/utils/compositions/usePlayProgress'
+import useMagnet from '@renderer/utils/compositions/useMagnet'
 // import { lyric } from '@renderer/core/share/lyric'
 import {
   statusText,
@@ -78,6 +79,10 @@ export default {
   },
   setup() {
     const router = useRouter()
+
+    // 主播放键磁吸弹簧（液态感微交互；reduced-motion 时不启动）
+    const dom_magnet = ref()
+    useMagnet(dom_magnet)
 
     const {
       nowPlayTimeStr,
@@ -141,6 +146,7 @@ export default {
       playPrev,
       handleToMusicLocation,
       isShowPlayerDetail,
+      dom_magnet,
     }
   },
 }
@@ -149,6 +155,7 @@ export default {
 
 <style lang="less" module>
 @import '@renderer/assets/styles/layout.less';
+@import '@renderer/assets/styles/glass.less';
 
 .player {
   position: relative;
@@ -175,6 +182,11 @@ export default {
     background-color: var(--color-main-background);
     opacity: .9;
     z-index: -1;
+
+    // WebGL 液态玻璃激活时撤掉这层罩：玻璃体折射源要透到舞台光
+    :global(.liquid-glass-on) & {
+      opacity: 0;
+    }
   }
 }
 
@@ -343,6 +355,8 @@ export default {
     aspect-ratio: 1 / 1;
     border-radius: 50%;
     background: var(--color-progress-ring, transparent);
+    // 磁吸弹簧位移（useMagnet 写入 --mx/--my；reduce 下变量缩放归零）
+    .glass-magnet();
   }
 }
 

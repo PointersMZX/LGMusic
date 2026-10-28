@@ -1,0 +1,100 @@
+/* ══════════════════════════════════════════════════════════
+   glass.less —— 甘露玻璃材质库（v1.2.0 液态玻璃体系）
+   对照「通用液态玻璃参数规范」六层材质模型的 CSS 落地：
+   ① 几何   圆角由调用处给定（面板 14px / 弹窗 12px / 胶囊 999px）
+   ② 折射   真实折射由 LiquidGlass WebGL 组件（SDF 位移 + 色散）承担；
+            CSS 侧以 backdrop-filter 磨砂近似
+   ③ 表面   blur + saturate(1.8) + brightness(1.06)
+   ④ 光照   顶部棱线 / 底部缘光 / 内泛光 / 外浮影；扫光带用 .glass-sheen-run
+   ⑤ 颜色   主题键 --color-glass-base（底板）/ --color-glass-tint（染色）
+            / --color-glass-edge（金边发丝）
+   ⑥ 动态   舞台光斑（layout-stage-flow 组件）+ WebGL 折射源流动
+            + hover 微交互（本文件 keyframes）
+
+   降级开关（运行时纯 CSS 变量生效，实体规则在 liquid-glass.less 全局层定义）：
+   --glass-motion          数值 1/0 —— 浮起、磁吸、扫光位移按它缩放
+   --glass-anim-state      running/paused —— 停所有装饰动画
+   由 prefers-reduced-motion 驱动，光斑层由组件 JS 直接不渲染。
+   注意：本文件会被组件 module @import，@keyframes 随组件各自打包
+   （css-loader 会对 module 内定义+引用同步改名，互不冲突），勿放 :root 实体规则。
+   ══════════════════════════════════════════════════════════ */
+
+/* 玻璃面板本体：低频大表面（弹窗等）。磨砂 + 染色 + 棱线 + 浮影一步到位 */
+.mixin-glass(@radius: 12px, @blur: 28px) {
+  position: relative;
+  border-radius: @radius;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.04) 42%, var(--color-glass-tint, transparent) 100%),
+    var(--color-glass-base, var(--color-main-background));
+  backdrop-filter: blur(@blur) saturate(1.8) brightness(1.06);
+  -webkit-backdrop-filter: blur(@blur) saturate(1.8) brightness(1.06);
+  border: 1px solid var(--color-glass-edge, transparent);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.26),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.07),
+    inset 0 0 24px rgba(255, 255, 255, 0.04),
+    0 8px 28px rgba(0, 0, 0, 0.28);
+}
+
+/* 轻玻璃：高频交互面（导航胶囊 / 搜索框 / 列表 hover）。
+   只叠光学层不动主题色，两套主题下都安全；blur 半径小控成本 */
+.mixin-glass-lite(@radius: 8px, @blur: 12px) {
+  backdrop-filter: blur(@blur) saturate(1.6);
+  -webkit-backdrop-filter: blur(@blur) saturate(1.6);
+  border-radius: @radius;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    0 4px 14px rgba(0, 0, 0, 0.16);
+}
+
+/* 入场/悬停扫光带：斜 105° 白带从左划到右一次
+   用法：元素自身 position:relative; overflow:hidden 后调用 */
+.glass-sheen-run(@dur: 2.4s) {
+  &::after {
+    content: '';
+    position: absolute;
+    inset: -40% -60%;
+    z-index: 0;
+    pointer-events: none;
+    background: linear-gradient(105deg,
+        transparent 38%,
+        rgba(255, 255, 255, 0.08) 46%,
+        rgba(255, 255, 255, 0.30) 50%,
+        rgba(255, 255, 255, 0.08) 54%,
+        transparent 62%);
+    transform: translateX(-80%) skewX(-14deg);
+    animation: glass-sheen-once @dur ease-out 0.25s 1 both;
+    animation-play-state: var(--glass-anim-state);
+  }
+}
+
+@keyframes glass-sheen-once {
+  from { transform: translateX(-80%) skewX(-14deg); }
+  to { transform: translateX(80%) skewX(-14deg); }
+}
+
+/* 玻璃卡片 hover 微交互：上浮 + 金边点亮（220ms）
+   位移乘 --glass-motion：reduce 下自动归零 */
+.glass-card-hover() {
+  transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
+  will-change: transform;
+
+  &:hover {
+    transform: translateY(calc(var(--glass-motion, 1) * -3px));
+    border-color: var(--color-glass-edge, rgba(255, 255, 255, 0.22));
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.30),
+      inset 0 0 24px rgba(255, 255, 255, 0.05),
+      0 12px 32px rgba(0, 0, 0, 0.34);
+  }
+
+  &:active {
+    transform: translateY(calc(var(--glass-motion, 1) * -1px));
+  }
+}
+
+/* 磁吸按钮：JS 弹簧写入 --mx/--my（-1~1 归一），此处负责形变；
+   reduce 下弹簧不启动（JS 守卫），此处再乘 --glass-motion 双保险 */
+.glass-magnet() {
+  transform: translate(calc(var(--mx, 0) * var(--glass-motion, 1) * 6px), calc(var(--my, 0) * var(--glass-motion, 1) * 6px));
+}

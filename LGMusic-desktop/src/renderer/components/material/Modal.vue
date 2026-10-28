@@ -228,6 +228,7 @@ export default {
 
 <style lang="less" module>
 @import '@renderer/assets/styles/layout.less';
+@import '@renderer/assets/styles/glass.less';
 
 .container {
   position: absolute;
@@ -252,34 +253,26 @@ export default {
   // will-change: transform;
 
   &.filter {
-    backdrop-filter: grayscale(70%);
+    backdrop-filter: grayscale(55%) blur(10px) saturate(1.4);
+    -webkit-backdrop-filter: grayscale(55%) blur(10px) saturate(1.4);
   }
-
-  // &:before {
-  //   .mixin-after();
-  //   position: absolute;
-  //   left: 0;
-  //   top: 0;
-  //   width: 100%;
-  //   height: 100%;
-  //   background-color: var(--color-000);
-  //   opacity: .6;
-  // }
 }
 
 .content {
-  position: relative;
-  border-radius: 4px;
-  box-shadow: 0 0 4px rgba(0, 0, 0, .25);
+  .mixin-glass(12px, 30px);
+  .glass-sheen-run(2.6s);
+  box-sizing: border-box;
   overflow: hidden;
-  // max-height: 80%;
-  // max-width: 76%;
   min-width: 220px;
-  position: relative;
   display: flex;
   flex-flow: column nowrap;
   z-index: 100;
-  background-color: var(--color-content-background);
+
+  // 内容垫高：保证文字永远在扫光层之上
+  > * {
+    position: relative;
+    z-index: 1;
+  }
 }
 
 .header {

@@ -1,5 +1,6 @@
 <template>
   <div id="container" class="view-container">
+    <layout-stage-flow />
     <layout-aside id="left" />
     <div id="right">
       <layout-toolbar id="toolbar" />

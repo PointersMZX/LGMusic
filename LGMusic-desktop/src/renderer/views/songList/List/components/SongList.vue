@@ -123,9 +123,10 @@ defineExpose({
   // padding: 10px;
   margin-bottom: 20px;
   cursor: pointer;
-  transition: opacity @transition-normal;
+  // 玻璃卡片微交互：上浮代替透明度淡化（位移乘 --glass-motion，reduce 下静止）
+  transition: transform 0.22s ease;
   &:hover {
-    opacity: .7;
+    transform: translateY(calc(var(--glass-motion, 1) * -3px));
   }
 }
 .image {
@@ -140,6 +141,14 @@ defineExpose({
   aspect-ratio: 1 / 1;
 
   box-shadow: 0 0 2px 0 rgba(0,0,0,.2);
+  transition: box-shadow 0.22s ease, opacity 0.22s ease, transform 0.22s ease;
+}
+.item:hover .image {
+  opacity: 1;
+  transform: scale(1.025);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    0 8px 22px rgba(0, 0, 0, 0.32);
 }
 .img {
   width: 100%;

@@ -42,6 +42,7 @@ uniform float u_pointerA;   // 指针在场强度 0..1
 uniform float u_sheen;      // 顶部镜面光强度
 uniform float u_glow;       // 指针高光强度
 uniform float u_time;
+uniform float u_flowAmp;    // 折射源时间流动幅度（CSS px；0=静止，reduced-motion 时为 0）
 
 // SDF：圆角矩形（Metric s2 同款）
 float sdRoundedRect(vec2 p, vec2 b, float r) {
@@ -92,36 +93,43 @@ void main() {
   float uvA = 1.0 / u_windowSize.x;
   float uvB = 1.0 / u_windowSize.y;
 
+  // 折射源时间流动：两组不同频率正弦叠加（不整除避免循环感），
+  // 幅度以 CSS px 计，让玻璃内的折射图案像水底光斑一样缓慢游移
+  vec2 flow = vec2(
+    sin(u_time * 0.17 + css.y * 0.0045) + 0.45 * sin(u_time * 0.31 + css.x * 0.006),
+    cos(u_time * 0.14 + css.x * 0.0050) + 0.45 * cos(u_time * 0.27 + css.y * 0.0055)
+  ) * u_flowAmp;
+
   vec4 col = vec4(0.0);
   // red：refractedCoord + dispersedCoord
-  vec4 red = texture2D(u_content, (u_panelPos + css + dispDir + off) * vec2(uvA, uvB));
+  vec4 red = texture2D(u_content, (u_panelPos + css + dispDir + flow + off) * vec2(uvA, uvB));
   col.r += red.r / 3.5;
   col.a += red.a / 7.0;
   // orange：+2/3 off
-  vec4 orange = texture2D(u_content, (u_panelPos + css + dispDir + off * (2.0 / 3.0)) * vec2(uvA, uvB));
+  vec4 orange = texture2D(u_content, (u_panelPos + css + dispDir + flow + off * (2.0 / 3.0)) * vec2(uvA, uvB));
   col.r += orange.r / 3.5;
   col.g += orange.g / 7.0;
   col.a += orange.a / 7.0;
   // yellow：+1/3 off
-  vec4 yellow = texture2D(u_content, (u_panelPos + css + dispDir + off * (1.0 / 3.0)) * vec2(uvA, uvB));
+  vec4 yellow = texture2D(u_content, (u_panelPos + css + dispDir + flow + off * (1.0 / 3.0)) * vec2(uvA, uvB));
   col.r += yellow.r / 3.5;
   col.g += yellow.g / 3.5;
   col.a += yellow.a / 7.0;
   // green：refractedCoord（无额外色散）
-  vec4 green = texture2D(u_content, (u_panelPos + css + dispDir) * vec2(uvA, uvB));
+  vec4 green = texture2D(u_content, (u_panelPos + css + dispDir + flow) * vec2(uvA, uvB));
   col.g += green.g / 3.5;
   col.a += green.a / 7.0;
   // cyan：-1/3 off
-  vec4 cyan = texture2D(u_content, (u_panelPos + css + dispDir - off * (1.0 / 3.0)) * vec2(uvA, uvB));
+  vec4 cyan = texture2D(u_content, (u_panelPos + css + dispDir + flow - off * (1.0 / 3.0)) * vec2(uvA, uvB));
   col.g += cyan.g / 3.5;
   col.b += cyan.b / 3.0;
   col.a += cyan.a / 7.0;
   // blue：-2/3 off
-  vec4 blue = texture2D(u_content, (u_panelPos + css + dispDir - off * (2.0 / 3.0)) * vec2(uvA, uvB));
+  vec4 blue = texture2D(u_content, (u_panelPos + css + dispDir + flow - off * (2.0 / 3.0)) * vec2(uvA, uvB));
   col.b += blue.b / 3.0;
   col.a += blue.a / 7.0;
   // purple：-off
-  vec4 purple = texture2D(u_content, (u_panelPos + css + dispDir - off) * vec2(uvA, uvB));
+  vec4 purple = texture2D(u_content, (u_panelPos + css + dispDir + flow - off) * vec2(uvA, uvB));
   col.r += purple.r / 7.0;
   col.b += purple.b / 3.0;
   col.a += purple.a / 7.0;

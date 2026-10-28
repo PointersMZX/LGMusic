@@ -8,6 +8,7 @@ import { vertexSrc, fragmentSrc } from './shaders.js'
 
 // variant = 'player'（底栏，招牌效果）| 'toolbar'（顶栏，轻一点）
 // 参数偏强：让折射位移 / 7 色色散 / 边缘流光在默认紫金黑背景下清晰可见（"液态"感）
+// flow = 折射源时间流动幅度（CSS px）：玻璃内折射图案缓慢游移；reduced-motion 时归零
 const VARIANT_PARAMS = {
   player: {
     radius: 14,
@@ -19,6 +20,7 @@ const VARIANT_PARAMS = {
     sheen: 1.15,
     glow: 2.2,
     blur: 3,
+    flow: 6,
   },
   toolbar: {
     radius: 10,
@@ -30,6 +32,7 @@ const VARIANT_PARAMS = {
     sheen: 0.95,
     glow: 1.8,
     blur: 2.5,
+    flow: 4.5,
   },
 }
 
@@ -46,6 +49,7 @@ const props = defineProps({
 
 const canvas = ref(null)
 const param = VARIANT_PARAMS[props.variant] || VARIANT_PARAMS.player
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches
 
 // ---------- 颜色解析 ----------
 const parseColor = (str, fallback = [0, 0, 0, 0]) => {
@@ -321,7 +325,7 @@ const initGL = () => {
     'u_content', 'u_panelSize', 'u_panelPos', 'u_windowSize',
     'u_radius', 'u_refractionHeight', 'u_refractionAmount', 'u_depthEffect', 'u_chromatic',
     'u_edgeFalloff', 'u_edgeColor', 'u_tint', 'u_base', 'u_glowColor',
-    'u_pointer', 'u_pointerA', 'u_sheen', 'u_glow', 'u_time',
+    'u_pointer', 'u_pointerA', 'u_sheen', 'u_glow', 'u_time', 'u_flowAmp',
   ]) {
     uniforms[name] = gl.getUniformLocation(prog, name)
   }
@@ -439,6 +443,7 @@ const draw = () => {
   smPointerA += (pointerA - smPointerA) * 0.1
 
   const t = performance.now() / 1000
+  // 减少动态：折射源流动与液态微光/边缘流光摆动全部冻结在静态瞬间
   gl.useProgram(prog)
   gl.bindTexture(gl.TEXTURE_2D, contentTex)
   const pv = param
@@ -459,7 +464,8 @@ const draw = () => {
   gl.uniform1f(uniforms.u_pointerA, smPointerA)
   gl.uniform1f(uniforms.u_sheen, pv.sheen)
   gl.uniform1f(uniforms.u_glow, pv.glow ?? 1.2)
-  gl.uniform1f(uniforms.u_time, t)
+  gl.uniform1f(uniforms.u_time, reduceMotion ? 12.0 : t)
+  gl.uniform1f(uniforms.u_flowAmp, reduceMotion ? 0 : (pv.flow ?? 0))
   gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
 }
 

@@ -173,6 +173,11 @@ export default {
     background-color: var(--color-main-background);
     opacity: .9;
     z-index: -1;
+
+    // WebGL 液态玻璃激活时撤掉这层罩：玻璃体折射源要透到舞台光
+    :global(.liquid-glass-on) & {
+      opacity: 0;
+    }
   }
 }
 

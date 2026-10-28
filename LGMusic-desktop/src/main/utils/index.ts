@@ -253,7 +253,9 @@ export const getTheme = () => {
   // themeId = 'naruto'
   // themeId = 'pink'
   // themeId = 'black'
-  let theme = themes.find(theme => theme.id == themeId)
+  // 显式标注 LX.Theme：主题源（内置 JSON / 用户自定义）统一走宽类型，
+  // 避免 TS 把 JSON 字面量推断成精确形状后与 LX.Theme 赋值不兼容
+  let theme = themes.find(theme => theme.id == themeId) as LX.Theme | undefined
   if (!theme) {
     userThemes = getStore(STORE_NAMES.THEME).get('themes') as LX.Theme[] | null ?? []
     theme = userThemes.find(theme => theme.id == themeId)

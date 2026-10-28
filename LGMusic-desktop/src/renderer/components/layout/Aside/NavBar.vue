@@ -87,6 +87,7 @@ export default {
 
 <style lang="less" module>
 @import '@renderer/assets/styles/layout.less';
+@import '@renderer/assets/styles/glass.less';
 
 .menu {
   flex: auto;
@@ -129,30 +130,16 @@ export default {
   top: 0%;
   width: 100%;
   height: 100%;
-  // left: 15%;
-  // top: 15%;
-  // width: 70%;
-  // height: 70%;
-  // display: block;
   box-sizing: border-box;
-  // text-decoration: none;
-  // border-radius: 20%;
-
-  // padding: 18px 3px;
-  // margin: 5px 0;
-  // border-left: 5px solid transparent;
   transition: @transition-fast;
-  transition-property: background-color, opacity;
+  transition-property: background-color, opacity, box-shadow, border-radius;
   color: var(--color-nav-font);
   cursor: pointer;
-  // font-size: 11.5px;
   text-align: center;
   outline: none;
   display: flex;
   align-items: center;
   justify-content: center;
-
-  // border-radius: @radius-border;
   .mixin-ellipsis-1();
   &:before {
     .mixin-after();
@@ -167,8 +154,9 @@ export default {
   }
 
   &.active {
-    // border-left-color: @color-theme-active;
+    // 轻玻璃胶囊：主题色块上叠磨砂 + 棱线 + 浮影，玻璃质感不破坏导航清晰度
     background-color: var(--color-primary-light-300-alpha-700);
+    .mixin-glass-lite(8px, 10px);
 
     &:before {
       transform: translateX(0);
@@ -186,6 +174,7 @@ export default {
     &:not(.active) {
       opacity: .8;
       background-color: var(--color-primary-light-400-alpha-700);
+      .mixin-glass-lite(8px, 10px);
     }
   }
   &:active:not(.active) {

@@ -1,11 +1,35 @@
-/* ===== LG Music · 液态玻璃 v3 =====
-   观感基准 = Metric v1.4.3 液态玻璃底栏。
-   三层参数全部走主题键：
-   - --color-glass-base   玻璃底板（紫金黑=半透磨砂 rgba 0.42，折射源为不透明紫金舞台；其他主题=不透明 main-background）
-   - --color-glass-tint   紫色玻璃染色（紫金黑=0.35，其他主题=transparent）
-   - --color-glass-edge   金色发丝描边（紫金黑=0.9，其他主题=transparent）
-   要点：底栏/顶栏的底板半透磨砂，折射源=不透明紫金舞台（#root 底色不透明，杜绝透到桌面壁纸）；
-   导航栏（#left）不做磨砂——导航要清晰，只用纯色面板 + 金色边缘光。 */
+/* ══════════════════════════════════════════════════════════
+   liquid-glass.less —— 液态玻璃全局层（v1.2.0「甘露玻璃」体系）
+
+   材质分工作了什么：
+   - 顶栏/底栏：LiquidGlass WebGL 组件（SDF 折射 + 7 色色散 + 边缘流光 +
+     指针高光 + 折射源流动）在玻璃体上绘制；本文件的 CSS 玻璃底板仅作
+     WebGL 不可用时的兜底。三层参数全部走主题键：
+     · --color-glass-base   玻璃底板（紫金黑=半透磨砂 rgba 0.42；其他主题=不透明 main-background）
+     · --color-glass-tint   紫色玻璃染色（紫金黑=0.35；其他主题=transparent）
+     · --color-glass-edge   金色发丝描边（紫金黑=0.9；其他主题=transparent）
+   - 导航栏（#left）不做磨砂——导航要清晰，只用纯色面板 + 金色边缘光；
+     导航项的 hover/active 胶囊走「轻玻璃」光学层（见组件内 .mixin-glass-lite）。
+   - 内页表面（弹窗/搜索框/歌单卡片）玻璃化由各自组件通过 glass.less 的
+     mixin 落地（.mixin-glass / .mixin-glass-lite / .glass-card-hover 等）。
+
+   动效降级开关（prefers-reduced-motion 驱动）：
+   - --glass-motion     位移类微交互缩放（1 正常 / 0 静止）
+   - --glass-anim-state 装饰动画播放态（running / paused）
+   - 流动舞台光层由 layout-stage-flow 组件按同一媒体查询直接不渲染。
+   ══════════════════════════════════════════════════════════ */
+
+:root {
+  --glass-motion: 1;
+  --glass-anim-state: running;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --glass-motion: 0;
+    --glass-anim-state: paused;
+  }
+}
 
 /* 顶栏：玻璃面板 */
 #toolbar {
@@ -64,4 +88,3 @@
     border: none;
   }
 }
-

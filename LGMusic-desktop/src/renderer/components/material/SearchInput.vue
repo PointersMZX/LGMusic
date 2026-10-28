@@ -200,6 +200,7 @@ export default {
 
 <style lang="less" module>
 @import '@renderer/assets/styles/layout.less';
+@import '@renderer/assets/styles/glass.less';
 
 .container {
   position: relative;
@@ -212,14 +213,25 @@ export default {
   position: absolute;
   width: 100%;
   border-radius: @form-radius;
-  transition: box-shadow .4s ease, background-color @transition-normal;
+  transition: box-shadow .4s ease, background-color @transition-normal, border-color .4s ease;
   display: flex;
   flex-flow: column nowrap;
   background-color: var(--color-primary-light-300-alpha-700);
+  // 轻玻璃：磨砂 + 棱线 + 发丝边（金边主题下显金色，其他主题透明退化）
+  backdrop-filter: blur(16px) saturate(1.6);
+  -webkit-backdrop-filter: blur(16px) saturate(1.6);
+  border: 1px solid var(--color-glass-edge, transparent);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    0 3px 10px rgba(0, 0, 0, 0.14);
 
   &.active {
     background-color: var(--color-primary-light-600-alpha-100);
-    box-shadow: 0 1px 5px 0 rgba(0,0,0,.2);
+    border-color: var(--color-glass-edge, rgba(255, 255, 255, 0.25));
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.30),
+      0 1px 5px 0 rgba(0, 0, 0, .2),
+      0 6px 22px rgba(0, 0, 0, 0.22);
     .form {
       input {
         border-bottom-left-radius: 0;
@@ -282,12 +294,24 @@ export default {
     }
   }
   .list {
-    // background-color: @color-search-form-background;
+    // 玻璃下拉面板：磨砂 + 棱线 + 外浮影
     font-size: 13px;
     transition: .3s ease;
     height: 0;
     transition-property: height;
     overflow: hidden;
+    backdrop-filter: blur(20px) saturate(1.6);
+    -webkit-backdrop-filter: blur(20px) saturate(1.6);
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0%, transparent 40%),
+      var(--color-glass-base, var(--color-main-background));
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.20),
+      0 10px 26px rgba(0, 0, 0, 0.26);
+    border: 1px solid var(--color-glass-edge, transparent);
+    border-top: none;
+    border-bottom-left-radius: 3px;
+    border-bottom-right-radius: 3px;
     li {
       cursor: pointer;
       padding: 8px 5px;
