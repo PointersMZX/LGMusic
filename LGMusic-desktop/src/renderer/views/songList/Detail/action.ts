@@ -13,7 +13,8 @@ export const addSongListDetail = async(id: string, source: LX.OnlineSource, name
   // console.log(this.listDetail.info)
   // if (!this.listDetail.info.name) return
   const listId = getListId(id, source)
-  const targetList = userLists.find(l => l.sourceListId == listId)
+  // sourceListId 兼容两种存储形态：旧数据存裸 id，新数据存 `${source}__${id}`
+  const targetList = userLists.find(l => l.sourceListId == listId || l.sourceListId == id)
   if (targetList) {
     const confirm = await dialog.confirm({
       message: window.i18n.t('duplicate_list_tip', { name: targetList.name }),
@@ -25,7 +26,14 @@ export const addSongListDetail = async(id: string, source: LX.OnlineSource, name
     return
   }
 
-  const list = await getListDetailAll(id, source)
+  // 拉全量歌曲失败（网络/接口/字段缺失）时不再静默拒绝：
+  // 仍创建该列表（歌曲为空），保证「收藏后在我的列表能找到」，之后可右击「更新」补歌
+  let list: LX.Music.MusicInfoOnline[]
+  try {
+    list = await getListDetailAll(id, source)
+  } catch {
+    list = []
+  }
   await createUserList({
     name,
     id: `${source}_${toMD5(listId)}`,

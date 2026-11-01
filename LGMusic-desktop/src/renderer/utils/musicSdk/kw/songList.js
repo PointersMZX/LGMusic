@@ -394,7 +394,8 @@ export default {
   filterListDetail(rawData) {
     // console.log(rawData)
     return rawData.map(item => {
-      let infoArr = item.N_MINFO.split(';')
+      // 兼容接口偶发缺失 N_MINFO 字段（缺失时该曲无音质档，避免整单解析崩溃）
+      let infoArr = String(item.N_MINFO || '').split(';')
       let types = []
       let _types = {}
       for (let info of infoArr) {

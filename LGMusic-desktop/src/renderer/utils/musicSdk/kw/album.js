@@ -10,7 +10,8 @@ export default {
     // console.log(rawList)
     // console.log(rawList.length, rawList2.length)
     return rawList.map((item, inedx) => {
-      let formats = item.formats.split('|')
+      // 兼容接口偶发缺失 formats 字段（缺失时该曲无音质档，避免整专辑解析崩溃）
+      let formats = String(item.formats || '').split('|')
       let types = []
       let _types = {}
       if (formats.includes('MP3128')) {
