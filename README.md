@@ -17,6 +17,7 @@
   - Windows：安装版与便携版（7z 压缩包），分普通版与 Win7 兼容版（Win7 兼容版文件名带 `win7` 标识）
   - Android：APK（universal 通用包 + 4 个分架构包，大多数设备装 universal 即可）
 - **其他渠道**：GitHub / Gitee / 蓝奏云，链接见官网下载页
+- **产品总览**：[官网主站](https://www.pointers-box.cc.cd) 可查看全部产品与平台公告
 
 > 品牌更名说明：Android 端旧版本需先卸载再安装新版；Windows 端更新后设置将重置（启用新数据目录）。
 
@@ -28,5 +29,6 @@
 ## 反馈与版权
 
 - 遇到问题请截图并反馈至 [官方 QQ 群](https://qm.qq.com/q/DGf5XI9jgW) 或作者本人（附上具体操作步骤，以及「设置-错误日志」的内容）
+- 官网：[lgmusic.pointers-box.cc.cd](https://lgmusic.pointers-box.cc.cd)；产品总览：[www.pointers-box.cc.cd](https://www.pointers-box.cc.cd)
 - 本项目完全免费且开源，发布于 [GitHub](https://github.com/PointersMZX/LGMusic) 面向全世界人用作技术学习交流
 - 音乐平台不易，请尊重版权，支持正版；本项目仅用于技术可行性探索与研究，不接受任何商业合作
