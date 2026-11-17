@@ -1,0 +1,28 @@
+{
+  "name": "lg-music-desktop",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./out/main/index.js",
+  "author": {
+    "name": "LG Music"
+  },
+  "description": "甘露音乐 - 用心倾听",
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "preview": "electron-vite preview",
+    "typecheck": "vue-tsc --noEmit -p tsconfig.web.json"
+  },
+  "dependencies": {
+    "vue": "^3.4.21"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.1.0",
+    "electron": "^30.5.1",
+    "electron-vite": "^2.3.0",
+    "typescript": "^5.5.4",
+    "vite": "^5.4.8",
+    "vue-tsc": "^2.1.6"
+  }
+}

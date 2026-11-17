@@ -1,0 +1,10 @@
+/* 全局基础样式：具体设计体系按青听样式在组件内逐步落地 */
+:root {
+  --bg-base: #101014;
+  --text-primary: #e8e8ee;
+  --text-secondary: #b9b9c6;
+  --text-tertiary: #8888a0;
+  --surface: rgba(255, 255, 255, 0.05);
+  --surface-hover: rgba(255, 255, 255, 0.08);
+  --accent: #4f8cff;
+}
