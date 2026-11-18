@@ -1,0 +1,35 @@
+// aliyun 镜像注入（gradle -I 参数加载，路径必须绝对）
+// 用法：gradlew assembleRelease -I D:\Agent\LGMusic\LGMusic-mobile\android\mirror-init.gradle
+def repos = [
+    'https://maven.aliyun.com/repository/google',
+    'https://maven.aliyun.com/repository/central',
+    'https://maven.aliyun.com/repository/gradle-plugin',
+    'https://maven.aliyun.com/repository/public'
+]
+
+allprojects {
+    buildscript {
+        repositories {
+            repos.each { url -> maven { url url } }
+            maven { url 'https://maven.aliyun.com/repository/google' }
+            mavenCentral()
+            google()
+        }
+    }
+    repositories {
+        repos.each { url -> maven { url url } }
+        mavenCentral()
+        google()
+    }
+}
+
+settingsEvaluated { settings ->
+    settings.pluginManagement {
+        repositories {
+            repos.each { url -> maven { url url } }
+            gradlePluginPortal()
+            google()
+            mavenCentral()
+        }
+    }
+}
