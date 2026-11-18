@@ -10,7 +10,7 @@
     </div>
     <div v-if="error" class="error-tip">{{ error }}</div>
     <div class="plaza-grid">
-      <div v-for="(pl, i) in playlists" :key="i" class="plaza-card">
+      <div v-for="(pl, i) in playlists" :key="i" class="plaza-card" @click="openOne(pl)">
         <div class="plaza-cover">
           <img v-if="pl.pic" :src="pl.pic" referrerpolicy="no-referrer" />
           <span v-else class="cover-fallback">♫</span>
@@ -26,6 +26,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { api } from '../api'
+import { openDetail } from '../stores/navigate'
 
 const categories = ['推荐', '热歌', '网络', '流行', '经典', '摇滚', '民谣', '电子']
 const activeCat = ref('推荐')
@@ -59,6 +60,10 @@ async function load(): Promise<void> {
 }
 
 onMounted(load)
+
+function openOne(pl: { name: string; pic?: string; count?: number; id?: string }): void {
+  if (pl.id) openDetail('playlist', 'qq', pl.id, pl.name)
+}
 </script>
 
 <style scoped>
