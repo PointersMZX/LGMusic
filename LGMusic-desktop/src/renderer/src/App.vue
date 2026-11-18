@@ -51,6 +51,11 @@
           </div>
           <div class="topbar-right">
             <div class="avatar-holder" @click="activeNav = 'account'">👤</div>
+            <span class="user-name">游客</span>
+            <button class="win-btn" title="设置" @click="activeNav = 'settings'">⚙</button>
+            <button class="win-btn" title="最小化" @click="winControl('minimize')">—</button>
+            <button class="win-btn" title="最大化" @click="winControl('maximize')">□</button>
+            <button class="win-btn close" title="关闭" @click="winControl('close')">✕</button>
           </div>
         </header>
         <main class="app-content">
@@ -66,6 +71,7 @@
       </div>
     </div>
     <PlayerBar />
+    <NowPlayingPage />
   </div>
 </template>
 
@@ -76,6 +82,12 @@ import PlayerBar from './components/PlayerBar.vue'
 import HomePage from './components/HomePage.vue'
 import PlaylistSquare from './components/PlaylistSquare.vue'
 import MvPage from './components/MvPage.vue'
+import NowPlayingPage from './components/NowPlayingPage.vue'
+import { api } from './api'
+
+function winControl(action: string): void {
+  api.send('window-control', action)
+}
 
 const discoverNav = [
   { key: 'home', label: '首页', icon: '🏠' },
@@ -93,11 +105,13 @@ const activeNav = ref('home')
 const globalKeyword = ref('')
 const pendingKeyword = ref('')
 
-const activeLabel = computed(
-  () =>
-    [...discoverNav, ...myNav].find((n) => n.key === activeNav.value)?.label ??
-    (activeNav.value === 'account' ? '账号' : '')
-)
+const activeLabel = computed(() => {
+  const known = [...discoverNav, ...myNav].find((n) => n.key === activeNav.value)?.label
+  if (known) return known
+  if (activeNav.value === 'account') return '账号'
+  if (activeNav.value === 'settings') return '设置'
+  return ''
+})
 
 function goSearch(): void {
   pendingKeyword.value = globalKeyword.value
@@ -205,6 +219,13 @@ function goSearch(): void {
   align-items: center;
   padding: 0 24px;
   background: transparent;
+  -webkit-app-region: drag;
+}
+.app-topbar button,
+.app-topbar input,
+.app-topbar .avatar-holder,
+.app-topbar .user-name {
+  -webkit-app-region: no-drag;
 }
 .nav-arrows {
   display: flex;
@@ -253,6 +274,8 @@ function goSearch(): void {
 .topbar-right {
   display: flex;
   justify-content: flex-end;
+  align-items: center;
+  gap: 6px;
 }
 .avatar-holder {
   width: 36px;
@@ -263,6 +286,28 @@ function goSearch(): void {
   align-items: center;
   justify-content: center;
   cursor: pointer;
+}
+.user-name {
+  font-size: 14px;
+  font-weight: 600;
+  margin-right: 8px;
+}
+.win-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 14px;
+  cursor: pointer;
+}
+.win-btn:hover {
+  background: rgba(0, 0, 0, 0.07);
+}
+.win-btn.close:hover {
+  background: #e5484d;
+  color: #fff;
 }
 .app-content {
   flex: 1;

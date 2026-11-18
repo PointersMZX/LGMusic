@@ -126,7 +126,8 @@ function createMainWindow(): void {
     minHeight: 640,
     show: false,
     autoHideMenuBar: true,
-    backgroundColor: '#101014',
+    frame: false,
+    backgroundColor: '#f6f7f9',
     webPreferences: {
       preload: join(__dirname, '../preload/index.mjs'),
       sandbox: false,
