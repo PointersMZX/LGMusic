@@ -1,33 +1,44 @@
 // aliyun 镜像注入（gradle -I 参数加载，路径必须绝对）
-// 用法：gradlew assembleRelease -I D:\Agent\LGMusic\LGMusic-mobile\android\mirror-init.gradle
-def repos = [
-    'https://maven.aliyun.com/repository/google',
-    'https://maven.aliyun.com/repository/central',
-    'https://maven.aliyun.com/repository/gradle-plugin',
-    'https://maven.aliyun.com/repository/public'
-]
+// 用法：gradlew.bat assembleRelease -I D:\Agent\LGMusic\LGMusic-mobile\android\mirror-init.gradle
 
 allprojects {
     buildscript {
         repositories {
-            repos.each { url -> maven { url url } }
             maven { url 'https://maven.aliyun.com/repository/google' }
-            mavenCentral()
+            maven { url 'https://maven.aliyun.com/repository/central' }
+            maven { url 'https://maven.aliyun.com/repository/gradle-plugin' }
+            maven { url 'https://maven.aliyun.com/repository/public' }
             google()
+            mavenCentral()
         }
     }
     repositories {
-        repos.each { url -> maven { url url } }
-        mavenCentral()
+        maven { url 'https://maven.aliyun.com/repository/google' }
+        maven { url 'https://maven.aliyun.com/repository/central' }
+        maven { url 'https://maven.aliyun.com/repository/gradle-plugin' }
+        maven { url 'https://maven.aliyun.com/repository/public' }
         google()
+        mavenCentral()
     }
 }
 
 settingsEvaluated { settings ->
     settings.pluginManagement {
         repositories {
-            repos.each { url -> maven { url url } }
+            maven { url 'https://maven.aliyun.com/repository/google' }
+            maven { url 'https://maven.aliyun.com/repository/central' }
+            maven { url 'https://maven.aliyun.com/repository/gradle-plugin' }
+            maven { url 'https://maven.aliyun.com/repository/public' }
             gradlePluginPortal()
+            google()
+            mavenCentral()
+        }
+    }
+    settings.dependencyResolutionManagement {
+        repositories {
+            maven { url 'https://maven.aliyun.com/repository/google' }
+            maven { url 'https://maven.aliyun.com/repository/central' }
+            maven { url 'https://maven.aliyun.com/repository/public' }
             google()
             mavenCentral()
         }
