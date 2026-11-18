@@ -19,8 +19,14 @@
               {{ playerState.current?.artist || '' }}
               <span v-if="playerState.level" class="np-level">{{ playerState.level }}</span>
             </div>
-            <div class="np-lyric">
-              <div v-for="(line, i) in lyricDisplay" :key="i" class="lyric-line" :class="{ on: line.active }">{{ line.text }}</div>
+            <div class="np-lyric" ref="lyricBox">
+              <div
+                v-for="(line, i) in lyricDisplay"
+                :key="i"
+                class="lyric-line"
+                :class="{ on: line.active }"
+                :data-line="i"
+              >{{ line.text }}</div>
               <div v-if="!lyricDisplay.length" class="lyric-empty">暂无歌词</div>
             </div>
           </div>
@@ -45,7 +51,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { playerState, togglePlay, playNext, playPrev, seekTo } from '../stores/player'
 import { nowPlayingState, hideNowPlaying } from '../stores/nowPlaying'
 
@@ -100,6 +106,21 @@ const activeIndex = computed(() => {
     else break
   }
   return idx
+})
+
+const lyricBox = ref<HTMLElement | null>(null)
+
+// 当前行变化 → 滚动歌词盒，让当前行保持在中部
+watch(activeIndex, async (idx) => {
+  if (idx < 0 || !lyricBox.value) return
+  await nextTick()
+  const line = lyricBox.value.querySelector(`[data-line="${idx}"]`) as HTMLElement | null
+  if (line) {
+    lyricBox.value.scrollTo({
+      top: line.offsetTop - lyricBox.value.clientHeight / 2 + line.clientHeight / 2,
+      behavior: 'smooth'
+    })
+  }
 })
 
 const lyricDisplay = computed(() =>
