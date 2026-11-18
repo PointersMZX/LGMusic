@@ -1,7 +1,10 @@
 <template>
   <footer class="player-bar">
     <div class="player-left">
-      <div class="cover-placeholder">{{ playerState.current ? '♪' : '' }}</div>
+      <div class="cover-holder">
+        <img v-if="playerState.current?.pic" :src="playerState.current.pic" referrerpolicy="no-referrer" />
+        <span v-else class="cover-note">{{ playerState.current ? '♪' : '' }}</span>
+      </div>
       <div class="track-meta">
         <div class="meta-name">{{ playerState.current?.name || '未在播放' }}</div>
         <div class="meta-artist">{{ playerState.current?.artist || '' }}</div>
@@ -53,8 +56,9 @@ function onSeek(event: MouseEvent): void {
 
 <style scoped>
 .player-bar {
-  height: 76px;
-  background: rgba(255, 255, 255, 0.05);
+  height: 78px;
+  background: var(--bg-sidebar);
+  border-top: 1px solid var(--border);
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
@@ -67,44 +71,54 @@ function onSeek(event: MouseEvent): void {
   gap: 12px;
   min-width: 0;
 }
-.cover-placeholder {
+.cover-holder {
   width: 48px;
   height: 48px;
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+  background: var(--surface-hover);
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
+}
+.cover-holder img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.cover-note {
   font-size: 20px;
-  color: #8888a0;
+  color: var(--text-tertiary);
 }
 .track-meta {
   min-width: 0;
 }
 .meta-name {
   font-size: 13px;
+  font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .meta-artist {
   font-size: 12px;
-  color: #8888a0;
+  color: var(--text-tertiary);
   margin-top: 3px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .player-center {
-  width: 460px;
+  width: 480px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 7px;
   align-items: center;
 }
 .player-controls {
   display: flex;
-  gap: 14px;
+  gap: 16px;
   align-items: center;
 }
 .ctrl {
@@ -112,15 +126,16 @@ function onSeek(event: MouseEvent): void {
   height: 34px;
   border-radius: 50%;
   border: none;
-  background: rgba(255, 255, 255, 0.08);
-  color: inherit;
+  background: rgba(0, 0, 0, 0.05);
+  color: var(--text-primary);
   cursor: pointer;
   font-size: 13px;
 }
 .ctrl.main {
   width: 40px;
   height: 40px;
-  background: rgba(255, 255, 255, 0.14);
+  background: var(--accent);
+  color: #fff;
   font-size: 15px;
 }
 .progress-line {
@@ -131,7 +146,7 @@ function onSeek(event: MouseEvent): void {
 }
 .time {
   font-size: 11px;
-  color: #8888a0;
+  color: var(--text-tertiary);
   min-width: 38px;
   text-align: center;
 }
@@ -139,14 +154,14 @@ function onSeek(event: MouseEvent): void {
   flex: 1;
   height: 4px;
   border-radius: 2px;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.08);
   cursor: pointer;
   position: relative;
 }
 .progress-fill {
   height: 100%;
   border-radius: 2px;
-  background: var(--accent, #4f8cff);
+  background: var(--accent);
 }
 .player-right {
   display: flex;
@@ -159,12 +174,12 @@ function onSeek(event: MouseEvent): void {
   font-size: 11px;
   padding: 3px 8px;
   border-radius: 8px;
-  background: rgba(79, 140, 255, 0.18);
-  color: #9dc0ff;
+  background: var(--accent-soft);
+  color: var(--accent-text);
 }
 .player-error {
   font-size: 11px;
-  color: #ff7a7a;
+  color: #e5484d;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

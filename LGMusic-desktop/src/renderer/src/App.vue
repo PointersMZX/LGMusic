@@ -1,25 +1,69 @@
 <template>
   <div class="app-root">
-    <div class="app-titlebar"></div>
     <div class="app-body">
       <aside class="app-sidebar">
-        <div class="app-logo">甘露音乐</div>
+        <div class="app-logo">
+          <div class="logo-badge">🐸</div>
+          <span class="logo-text">甘露音乐</span>
+        </div>
         <nav class="app-nav">
-          <div v-for="item in nav" :key="item.key" class="nav-item" :class="{ active: item.key === activeNav }" @click="activeNav = item.key">
-            {{ item.label }}
+          <div class="nav-group-label">发现</div>
+          <div
+            v-for="item in discoverNav"
+            :key="item.key"
+            class="nav-item"
+            :class="{ active: item.key === activeNav }"
+            @click="activeNav = item.key"
+          >
+            <span class="nav-icon">{{ item.icon }}</span>{{ item.label }}
+          </div>
+          <div class="nav-group-label">我的</div>
+          <div
+            v-for="item in myNav"
+            :key="item.key"
+            class="nav-item"
+            :class="{ active: item.key === activeNav }"
+            @click="activeNav = item.key"
+          >
+            <span class="nav-icon">{{ item.icon }}</span>{{ item.label }}
+          </div>
+          <div class="nav-group-label custom-head">
+            自建歌单
+            <span class="custom-count">0</span>
+            <span class="custom-add">＋</span>
           </div>
         </nav>
-        <div class="sidebar-footer">
-          <div class="nav-item" :class="{ active: activeNav === 'settings' }" @click="activeNav = 'settings'">设置</div>
-        </div>
       </aside>
-      <main class="app-content">
-        <SearchPage v-if="activeNav === 'search'" />
-        <div v-else class="placeholder-page">
-          <h1>{{ activeLabel }}</h1>
-          <p>复刻开发中 —— 本页面将按青听样式重建。</p>
-        </div>
-      </main>
+      <div class="main-col">
+        <header class="app-topbar">
+          <div class="nav-arrows">
+            <button class="arrow-btn">‹</button>
+            <button class="arrow-btn disabled">›</button>
+          </div>
+          <div class="topbar-search">
+            <input
+              v-model="globalKeyword"
+              class="topbar-search-input"
+              placeholder="搜索想听的音乐"
+              @keyup.enter="goSearch"
+            />
+            <span class="topbar-search-icon">🔍</span>
+          </div>
+          <div class="topbar-right">
+            <div class="avatar-holder" @click="activeNav = 'account'">👤</div>
+          </div>
+        </header>
+        <main class="app-content">
+          <SearchPage v-if="activeNav === 'search'" :initial-keyword="pendingKeyword" />
+          <HomePage v-else-if="activeNav === 'home'" @navigate="activeNav = $event" />
+          <PlaylistSquare v-else-if="activeNav === 'playlist'" />
+          <MvPage v-else-if="activeNav === 'mv'" />
+          <div v-else class="placeholder-page">
+            <h1>{{ activeLabel }}</h1>
+            <p>复刻开发中 —— 本页面将按青听样式重建。</p>
+          </div>
+        </main>
+      </div>
     </div>
     <PlayerBar />
   </div>
@@ -29,45 +73,43 @@
 import { computed, ref } from 'vue'
 import SearchPage from './components/SearchPage.vue'
 import PlayerBar from './components/PlayerBar.vue'
+import HomePage from './components/HomePage.vue'
+import PlaylistSquare from './components/PlaylistSquare.vue'
+import MvPage from './components/MvPage.vue'
 
-const nav = [
-  { key: 'home', label: '首页' },
-  { key: 'search', label: '搜索' },
-  { key: 'playlist', label: '歌单' },
-  { key: 'ranking', label: '排行榜' },
-  { key: 'library', label: '我的' },
-  { key: 'local', label: '本地音乐' }
+const discoverNav = [
+  { key: 'home', label: '首页', icon: '🏠' },
+  { key: 'playlist', label: '歌单广场', icon: '🎵' },
+  { key: 'mv', label: 'MV', icon: '🎬' }
+]
+const myNav = [
+  { key: 'favorites', label: '我的喜欢', icon: '❤️' },
+  { key: 'recent', label: '最近播放', icon: '🕘' },
+  { key: 'downloads', label: '下载管理', icon: '⬇️' },
+  { key: 'local', label: '本地音乐', icon: '📁' }
 ]
 
-const activeNav = ref('search')
-const activeLabel = computed(() => nav.find((n) => n.key === activeNav.value)?.label ?? (activeNav.value === 'settings' ? '设置' : ''))
+const activeNav = ref('home')
+const globalKeyword = ref('')
+const pendingKeyword = ref('')
+
+const activeLabel = computed(
+  () =>
+    [...discoverNav, ...myNav].find((n) => n.key === activeNav.value)?.label ??
+    (activeNav.value === 'account' ? '账号' : '')
+)
+
+function goSearch(): void {
+  pendingKeyword.value = globalKeyword.value
+  activeNav.value = 'search'
+}
 </script>
 
-<style>
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-html,
-body,
-#app {
-  height: 100%;
-  font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
-  color: var(--text-primary, #e8e8ee);
-  background: var(--bg-base, #101014);
-  overflow: hidden;
-  user-select: none;
-}
+<style scoped>
 .app-root {
   display: flex;
   flex-direction: column;
   height: 100%;
-}
-.app-titlebar {
-  height: 38px;
-  -webkit-app-region: drag;
-  background: rgba(255, 255, 255, 0.03);
 }
 .app-body {
   flex: 1;
@@ -75,40 +117,158 @@ body,
   min-height: 0;
 }
 .app-sidebar {
-  width: 220px;
-  background: rgba(255, 255, 255, 0.04);
-  padding: 12px 14px;
+  width: 228px;
+  background: var(--bg-sidebar);
+  padding: 18px 14px 12px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  overflow-y: auto;
 }
 .app-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 8px 18px;
+}
+.logo-badge {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: var(--accent-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-size: 20px;
+}
+.logo-text {
+  font-size: 17px;
   font-weight: 700;
-  padding: 8px 12px 18px;
+}
+.app-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.nav-group-label {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  padding: 14px 12px 8px;
+}
+.nav-group-label.custom-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.custom-count {
+  font-size: 11px;
+  background: var(--surface-hover);
+  border-radius: 8px;
+  padding: 1px 7px;
+}
+.custom-add {
+  margin-left: auto;
+  cursor: pointer;
+  color: var(--text-secondary);
 }
 .nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   padding: 10px 14px;
-  border-radius: 10px;
+  border-radius: 12px;
   cursor: pointer;
   font-size: 14px;
-  color: #b9b9c6;
+  color: var(--text-secondary);
   transition: background 0.15s;
 }
 .nav-item:hover {
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--surface-hover);
 }
 .nav-item.active {
-  background: rgba(255, 255, 255, 0.1);
-  color: #fff;
+  background: var(--accent-soft);
+  color: var(--accent-text);
+  font-weight: 600;
 }
-.sidebar-footer {
-  margin-top: auto;
+.nav-icon {
+  font-size: 15px;
+}
+.main-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.app-topbar {
+  height: 64px;
+  display: grid;
+  grid-template-columns: 1fr minmax(320px, 520px) 1fr;
+  align-items: center;
+  padding: 0 24px;
+  background: transparent;
+}
+.nav-arrows {
+  display: flex;
+  gap: 6px;
+}
+.arrow-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, 0.05);
+  color: var(--text-secondary);
+  font-size: 16px;
+  cursor: pointer;
+}
+.arrow-btn.disabled {
+  opacity: 0.45;
+}
+.topbar-search {
+  position: relative;
+  width: 100%;
+}
+.topbar-search-input {
+  width: 100%;
+  height: 40px;
+  border-radius: 20px;
+  border: none;
+  background: rgba(0, 0, 0, 0.055);
+  color: inherit;
+  padding: 0 44px 0 18px;
+  font-size: 14px;
+  outline: none;
+}
+.topbar-search-input:focus {
+  background: #fff;
+  box-shadow: var(--shadow-card);
+}
+.topbar-search-icon {
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 14px;
+  opacity: 0.55;
+}
+.topbar-right {
+  display: flex;
+  justify-content: flex-end;
+}
+.avatar-holder {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
 }
 .app-content {
   flex: 1;
   min-width: 0;
   overflow-y: auto;
+  padding: 4px 24px 24px;
 }
 .placeholder-page {
   height: 100%;
@@ -116,7 +276,7 @@ body,
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  color: #8888a0;
+  color: var(--text-tertiary);
 }
 .placeholder-page h1 {
   font-size: 22px;

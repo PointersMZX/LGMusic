@@ -1,10 +1,37 @@
-/* 全局基础样式：具体设计体系按青听样式在组件内逐步落地 */
+/* 全局基础样式 —— 浅色主题，绿色主调（对照青听） */
 :root {
-  --bg-base: #101014;
-  --text-primary: #e8e8ee;
-  --text-secondary: #b9b9c6;
-  --text-tertiary: #8888a0;
-  --surface: rgba(255, 255, 255, 0.05);
-  --surface-hover: rgba(255, 255, 255, 0.08);
-  --accent: #4f8cff;
+  --bg-base: #f6f7f9;
+  --bg-sidebar: #ffffff;
+  --text-primary: #1f2329;
+  --text-secondary: #6b7280;
+  --text-tertiary: #9ca3af;
+  --accent: #29c586;
+  --accent-soft: #e0f7ec;
+  --accent-text: #17a06b;
+  --surface: #ffffff;
+  --surface-hover: #f3f4f6;
+  --border: #ececf0;
+  --shadow-card: 0 6px 18px rgba(31, 35, 41, 0.08);
+}
+html,
+body,
+#app {
+  height: 100%;
+  margin: 0;
+  font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  color: var(--text-primary);
+  background: var(--bg-base);
+  overflow: hidden;
+  user-select: none;
+}
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.14);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
 }
