@@ -14,6 +14,7 @@ const { SecureKwApi } = NativeModules as {
     }>
     gatewayGet: (path: string) => Promise<string>
     kgSongDetail: (hash: string) => Promise<string>
+    search: (source: string, keyword: string, page: number, pagesize: number) => Promise<Array<Record<string, string>>>
   }
 }
 
@@ -79,4 +80,25 @@ export async function skipNext(): Promise<void> {
 
 export async function skipPrev(): Promise<void> {
   await TrackPlayer.skipToPrevious()
+}
+
+/** 六源搜索（原生 SecureKwApi.search，返回归一化歌单项） */
+export async function searchMusic(
+  source: string,
+  keyword: string,
+  page: number,
+  pagesize: number
+): Promise<PlayableTrack[]> {
+  const res = await secureApi.search(source, keyword, page, pagesize, (e) => {
+    throw new Error(e?.message || '搜索失败')
+  })
+  return (res || []).map((item) => ({
+    rid: item.rid ?? '',
+    name: item.name ?? '',
+    artist: item.artist ?? '',
+    album: item.album,
+    pic: item.pic,
+    duration: Number(item.duration) || undefined,
+    source
+  })).filter((t) => t.rid || t.name)
 }

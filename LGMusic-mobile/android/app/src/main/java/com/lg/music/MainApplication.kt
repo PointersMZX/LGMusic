@@ -17,7 +17,7 @@ class MainApplication : Application(), ReactApplication {
       object : DefaultReactNativeHost(this) {
         override fun getPackages(): List<ReactPackage> =
             PackageList(this).packages.apply {
-              add(SecureKwApiPackage())
+              add(AppPackages())
             }
 
         override fun getJSMainModuleName(): String = "index"

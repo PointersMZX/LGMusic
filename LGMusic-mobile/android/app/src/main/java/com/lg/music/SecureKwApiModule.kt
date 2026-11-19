@@ -7,7 +7,6 @@ import com.facebook.react.bridge.ReactContextBaseJavaModule
 import com.facebook.react.bridge.ReactMethod
 import com.facebook.react.bridge.WritableMap
 import com.facebook.react.bridge.Arguments
-import java.security.MessageDigest
 import java.util.UUID
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
@@ -16,6 +15,9 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
+import org.json.JSONArray
+import java.security.MessageDigest
+import java.util.ArrayList
 
 /**
  * SecureKwApiModule —— 六源安全接口与网关解析（签名下沉原生层）。
@@ -40,6 +42,19 @@ class SecureKwApiModule(private val reactContext: ReactApplicationContext) :
 
   private val gatewayAppId = "qingmusic-android"
   private val gatewaySignSecret = "qm-gw-7c1f4e9a2b8d5360e1a7c4f9b2d8036c"
+
+  /** 网易云固定设备 Cookie（复刻青听 v1.0.3） */
+  private val WY_COOKIE =
+    "EVNSM=1.0.0; osver=14; MUSIC_U=; NMCID=oyapoh.1707738771510.01.4; versioncode=1000022; URS_APPID=E26D3B65474AEE2FC2586DCAE42BCF0CBEA421D4CB53C42A74EBEF035ACE98E0B6F0E44087D61EFC06BE92279CD6EEC6; buildver=231106171719; resolution=3040x1440; sDeviceId=bnVsbAljNjowOTpiMzphYzo4NDowNgk4NzNjZWYxNGQxYjY4MWI5CWY1ZjVhNTIxOGFjNDA3ZmY%3D; os=magicos; channel=netease; screenType=other; deviceId=bnVsbAljNjowOTpiMzphYzo4NDowNgk4NzNjZWYxNGQxYjY4MWI5CWY1ZjVhNTIxOGFjNDA3ZmY%3D; appver=1.0.22; NMDI=Q1NKTQkBDACdyBclTqtsEuV2ecI7AAAAKyV%2B9xWzSJenvmG2RFU9D82gQoo96WkqNFpO59px3PrvpN5DF0cFPRJ3BXMIBMdBOcxhjUoyxI898tU%3D; ntes_kaola_ad=1; language=zh-CN; mobilename=22041211AC; __csrf=b383e0976daab42a166a9544f90a1dc3; NMTID=00O3nhQ8Br3egFvnEAIjk_hfVnTjsAAAGNnSmw4w; packageType=release"
+  private val WY_UA =
+    "NeteaseMusic/1.0.22.231106171719(1000022);Dalvik/2.1.0 (Linux; U; Android 14; 22041211AC Build/UP1A.231005.007)"
+
+  /** 酷我 UA（复刻青听 v1.0.3） */
+  private val KW_UA =
+    "Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/37.0.2062.120 Safari/537.36"
+
+  /** B 站 WBI 键（复刻青听 v1.0.3） */
+  private val WBI_MID = "7fa3d2b5f1c34b0d8a9e7c2f1b3d4e5f"
 
   // ---------------------------------------------------------------------------
   // 设备档案
@@ -208,5 +223,198 @@ class SecureKwApiModule(private val reactContext: ReactApplicationContext) :
         promise.reject("KG_DETAIL_FAILED", e.message ?: "酷狗详情请求失败")
       }
     }.start()
+  }
+
+  // ---------------------------------------------------------------------------
+  // 六源搜索（复刻青听原生 SecureKwApiModule 搜索能力）
+  // ---------------------------------------------------------------------------
+
+  @ReactMethod
+  fun search(source: String, keyword: String, page: Int, pagesize: Int, promise: Promise) {
+    Thread {
+      try {
+        val result = when (source) {
+          "kg" -> kgSearch(keyword, page, pagesize)
+          "wy" -> wySearch(keyword, page, pagesize)
+          "mg" -> mgSearch(keyword, page, pagesize)
+          "bili" -> biliSearch(keyword, page, pagesize)
+          "kw" -> kwSearch(keyword, page, pagesize)
+          else -> null
+        }
+        if (result != null) promise.resolve(result)
+        else promise.reject("SEARCH_UNSUPPORTED", "不支持的音源")
+      } catch (e: Exception) {
+        promise.reject("SEARCH_FAILED", e.message ?: "搜索失败")
+      }
+    }.start()
+  }
+
+  /** 酷狗歌单搜索（网关 /v1/search/special，x-router 头） */
+  private fun kgSearch(keyword: String, page: Int, pagesize: Int): List<Map<String, String>> {
+    val body = JSONObject().apply {
+      put("source", "kg")
+      put("keyword", keyword)
+      put("page", page)
+      put("pagesize", pagesize)
+    }.toString()
+    val headers = gatewayHeaders("POST", "/v1/search/special", body)
+    val url = "/v1/search/special?keyword=${encode(keyword)}&platform=WebFilter&page=$page&pagesize=$pagesize&iscorrection=1&area_code=1"
+    val request = buildPostRequest(
+      servers.first() + url, body.toRequestBody("application/json".toMediaType()), headers)
+    val text = client.newCall(request).execute().use { r ->
+      if (!r.isSuccessful) throw Exception("HTTP ${r.code}")
+      r.body?.string() ?: ""
+    }
+    return parseJsonList(text, keyword)
+  }
+
+  private fun buildGetRequest(url: String, headers: Map<String, String>): Request {
+    return Request.Builder().url(url)
+      .header("Accept", "application/json")
+      .apply { headers.forEach { (k, v) -> header(k, v) } }
+      .build()
+  }
+
+  private fun buildPostRequest(url: String, body: okhttp3.RequestBody, headers: Map<String, String>): Request {
+    return Request.Builder().url(url)
+      .post(body)
+      .header("Content-Type", "application/json")
+      .header("Accept", "application/json")
+      .apply { headers.forEach { (k, v) -> header(k, v) } }
+      .build()
+  }
+
+  /** 网易云搜索（interface3 v3，固定设备 Cookie） */
+  private fun wySearch(keyword: String, page: Int, pagesize: Int): List<Map<String, String>> {
+    val c = JSONArray().apply {
+      put(JSONObject().apply {
+        put("s", 0)
+        put("type", 2)
+        put("limit", pagesize)
+        put("offset", page * pagesize)
+      })
+    }.toString()
+    val text = jsonGet(
+      "https://interface3.music.163.com/api/v3/search/song?c=${encode(c)}",
+      mapOf("Cookie" to WY_COOKIE, "User-Agent" to WY_UA))
+    return parseJsonList(text, keyword)
+  }
+
+  /** 咪咕搜索（jadeite searchAll） */
+  private fun mgSearch(keyword: String, page: Int, pagesize: Int): List<Map<String, String>> {
+    val url = "https://jadeite.migu.cn/music_search/v3/search/searchAll?keyword=${encode(keyword)}&pageNo=${page}&pageSize=${pagesize}&v=3.0"
+    val text = jsonGet(url, mapOf("Referer" to "https://music.migu.cn/", "User-Agent" to "Mozilla/5.0 (Linux; Android 10; LGmusic) AppleWebKit/537.36"))
+    return parseJsonList(text, keyword)
+  }
+
+  /** B 站搜索（web-interface search/type + WBI 签名） */
+  private fun biliSearch(keyword: String, page: Int, pagesize: Int): List<Map<String, String>> {
+    val pageNo = page * 30
+    val wc = pageNo.toString()
+    val wp = String.format("p%s%s", page + 1, pagesize.coerceAtMost(30))
+    val mid = WBI_MID
+    val sign = WBI_SIGN(keyword, wp, wc, mid)
+    val url = "https://api.bilibili.com/x/web-interface/search/type?search_type=music&keyword=${encode(keyword)}&page=$wp"
+    val headers = mapOf(
+      "Referer" to "https://search.bilibili.com/",
+      "Origin" to "https://search.bilibili.com",
+      "User-Agent" to "Mozilla/5.0 (Linux; Android 10; LGmusic) AppleWebKit/537.36",
+      "wts" to sign)
+    val text = jsonGet(url, headers)
+    return parseJsonList(text, keyword)
+  }
+
+  /** 酷我搜索（msearch song_search_v2，dfid/mid/uuid/token 参数） */
+  private fun kwSearch(keyword: String, page: Int, pagesize: Int): List<Map<String, String>> {
+    val dfid = "-" + System.currentTimeMillis() + Math.floor(Math.random() * 100000)
+    val mid = MD5_HEX(dfid)
+    val uuid = MD5_HEX(dfid + mid)
+    val clienttime = System.currentTimeMillis() / 1000
+    val token = MD5_HEX("11111111111111111111" + clienttime)
+    val params: Map<String, String> = mapOf(
+      "key" to keyword, "page" to page.toString(), "pagesize" to pagesize.toString(),
+      "dfid" to dfid, "mid" to mid, "uuid" to uuid,
+      "clienttime" to "$clienttime", "token" to token, "platform" to "web")
+    val url = "https://msearch.kuwo.cn/song_search_v2?" + appendQuery(params)
+    val headers = mutableMapOf(
+      "User-Agent" to KW_UA, "Referer" to "https://m.kuwo.cn/")
+    headers.put("x-forwarded-for", "1.0.1.114")
+    val text = jsonGet(url, headers)
+    return parseJsonList(text, keyword)
+  }
+
+  private fun parseJsonList(text: String, keyword: String): List<Map<String, String>> {
+    val json = JSONObject(text)
+    val result: org.json.JSONArray = json.optJSONArray("result") ?: org.json.JSONArray()
+    val list = ArrayList<Map<String, String>>()
+    var i = 0
+    while (i < result.length()) {
+      val item = result.getJSONObject(i)
+      val name = item.optString("name") ?: ""
+      if (name.isBlank()) {
+        i++
+        continue
+      }
+      list.add(mapOf(
+        "rid" to item.optString("rid", ""),
+        "name" to name,
+        "artist" to item.optString("artist", ""),
+        "album" to item.optString("album", ""),
+        "duration" to item.optString("duration", ""),
+        "pic" to item.optString("pic", ""),
+        "keyword" to keyword))
+      i++
+    }
+    return list
+  }
+
+  private fun jsonGet(url: String, headers: Map<String, String>): String {
+    val request = Request.Builder().url(url)
+      .header("Accept", "application/json")
+      .apply { headers.forEach { (k, v) -> header(k, v) } }
+      .build()
+    return try {
+      client.newCall(request).execute().use { r ->
+        if (!r.isSuccessful) throw Exception("HTTP ${r.code}")
+        r.body?.string() ?: ""
+      }
+    } catch (e: Exception) {
+      throw e
+    }
+  }
+
+  private fun appendQuery(params: Map<String, String>): String {
+    val sb = StringBuilder()
+    for ((k, v) in params) {
+      sb.append(encode(k)).append('=').append(encode(v))
+    }
+    return sb.toString()
+  }
+
+  private fun encode(s: String): String {
+    val safe = setOf('a'..'z', 'A'..'Z', '0'..'9', '-', '_', '.', '~', '*', '(', ')', '!', '&', ',', '?', ':')
+    val out = StringBuilder()
+    for (i in s.indices) {
+      val v = s[i].code
+      if (safe.contains(v)) {
+        out.append(s[i])
+      } else {
+        out.append('%')
+        out.append(String.format("%02x", v and 0xFF))
+      }
+    }
+    return out.toString()
+  }
+
+  private fun MD5_HEX(input: String): String {
+    val digest = MessageDigest.getInstance("MD5").digest(input.toByteArray(Charsets.UTF_8))
+    return digest.joinToString("") { "%02x".format(it) }
+  }
+
+  /** WBI 签名（B 站搜索 wts 头） */
+  private fun WBI_SIGN(keyword: String, wp: String, wc: String, mid: String): String {
+    val dict = "wts,${MD5_HEX(mid)},${MD5_HEX(keyword)}"
+    val fp = dict.split(",").sorted().joinToString("") { it }
+    return MD5_HEX("%s%s%s".format("1", MD5_HEX(mid), fp))
   }
 }

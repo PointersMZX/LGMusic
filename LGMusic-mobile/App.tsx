@@ -14,7 +14,7 @@ import {
   View
 } from 'react-native'
 import { SafeAreaView } from 'react-native'
-import { playTrack as startPlayback, togglePlayback, type PlayableTrack } from './player'
+import { playTrack as startPlayback, togglePlayback, searchMusic, type PlayableTrack } from './player'
 
 const SOURCES = [
   { key: 'kg', label: '酷狗' },
@@ -51,27 +51,9 @@ const App = (): React.JSX.Element => {
       setLoading(true)
       setError('')
       try {
-        // 骨架期先接酷狗直连（与桌面端 kg 搜索一致），其余源走原生 SecureKwApi 桥后续接入
-        const res = await fetch(
-          `https://songsearch.kugou.com/song_search_v2?keyword=${encodeURIComponent(text)}&page=1&pagesize=30&userid=0&clientver=&platform=WebFilter&filter=2&iscorrection=1&privilege_filter=0&area_code=1`
-        ).then((r) => r.json())
-        const list: Array<Record<string, unknown>> = res?.data?.lists || []
-        const mapped: Track[] = list
-          .map((it) => {
-            const fileName = String(it.filename || '')
-            const parts = fileName.split(' - ')
-            return {
-              rid: String(it.hash || ''),
-              name: parts.length > 1 ? parts.slice(1).join(' - ') : fileName,
-              artist: parts.length > 1 ? parts[0] : String(it.singername || ''),
-              album: it.album_name ? String(it.album_name) : undefined,
-              pic: (it.cover || '').replace('{size}', '480').replace('/{size}', '/480'),
-              duration: Number(it.duration) || undefined,
-              source: 'kg'
-            }
-          })
-          .filter((t) => t.rid)
-        setTracks(mapped)
+        // 六源统一走原生 SecureKwApi 桥（网关 resolve/search 能力，与桌面端协议一致）
+        const tracks = await searchMusic(source, text, 1, 30)
+        setTracks(tracks)
       } catch (err) {
         setError(err instanceof Error ? err.message : String(err))
         setTracks([])
@@ -79,7 +61,7 @@ const App = (): React.JSX.Element => {
         setLoading(false)
       }
     },
-    []
+    [source]
   )
 
   // 播放状态轮询（track-player 状态桥）
