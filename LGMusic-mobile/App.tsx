@@ -1,8 +1,8 @@
 /**
  * 甘露音乐 安卓端 —— 复刻青听 v1.4.1 架构
- * 结构：六源搜索 + 播放（react-native-track-player 后续接入）
+ * 结构：六源搜索 + 播放（SecureKwApi 原生桥 + react-native-track-player）
  */
-import React, { useCallback, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import {
   ActivityIndicator,
   FlatList,
@@ -14,6 +14,7 @@ import {
   View
 } from 'react-native'
 import { SafeAreaView } from 'react-native'
+import { playTrack as startPlayback, togglePlayback, type PlayableTrack } from './player'
 
 const SOURCES = [
   { key: 'kg', label: '酷狗' },
@@ -81,21 +82,39 @@ const App = (): React.JSX.Element => {
     []
   )
 
+  // 播放状态轮询（track-player 状态桥）
+  useEffect(() => {
+    if (!current) return
+    const timer = setInterval(async () => {
+      try {
+        const { TrackPlayer } = require('react-native-track-player')
+        const state = await TrackPlayer.getPlaybackState()
+        setPlaying(state.state === 'playing')
+      } catch {
+        /* 初始化前忽略 */
+      }
+    }, 1000)
+    return () => clearInterval(timer)
+  }, [current])
+
   const playTrack = useCallback(async (track: Track) => {
     setCurrent(track)
     setPlaying(false)
+    setError('')
     try {
-      // 骨架期酷狗直连详情取播放地址；正式复刻走网关 resolve-url（与桌面端一致）
-      const detail = await fetch(
-        `https://wwwapi.kugou.com/yy/index.php?r=play/getdata&hash=${track.rid}&dfid=1&mid=1&platid=4`,
-        { headers: { Cookie: 'kg_mid=1; kg_dfid=1' } }
-      ).then((r) => r.json())
-      const url = String(detail?.data?.play_url || detail?.data?.play_backup_url || '')
-      if (!url) throw new Error('未取得播放地址')
-      // TODO: 接 react-native-track-player 播放
+      // 经 SecureKwApi 原生桥走网关 resolve-url（与桌面端一致），track-player 播放
+      await startPlayback(track as PlayableTrack)
       setPlaying(true)
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
+    }
+  }, [])
+
+  const toggleNow = useCallback(async () => {
+    try {
+      await togglePlayback()
+    } catch {
+      /* 未初始化忽略 */
     }
   }, [])
 
@@ -164,12 +183,12 @@ const App = (): React.JSX.Element => {
           />
         )}
         {current ? (
-          <View style={styles.playerBar}>
+          <Pressable style={styles.playerBar} onPress={() => void toggleNow()}>
             <Text numberOfLines={1} style={styles.playerName}>
               {current.name}
             </Text>
-            <Text style={styles.playerState}>{playing ? '播放中' : '已停止'}</Text>
-          </View>
+            <Text style={styles.playerState}>{playing ? '⏸ 播放中' : '▶ 已暂停'}</Text>
+          </Pressable>
         ) : null}
       </SafeAreaView>
   )
