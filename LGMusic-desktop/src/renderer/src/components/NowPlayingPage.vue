@@ -24,8 +24,9 @@
                 v-for="(line, i) in lyricDisplay"
                 :key="i"
                 class="lyric-line"
-                :class="{ on: line.active }"
+                :class="{ on: line.active, clickable: line.time > 0 }"
                 :data-line="i"
+                @click="onLyricClick(line)"
               >{{ line.text }}</div>
               <div v-if="!lyricDisplay.length" class="lyric-empty">暂无歌词</div>
             </div>
@@ -33,9 +34,16 @@
         </div>
         <div class="np-bottom">
           <div class="np-controls">
-            <button class="np-ctrl" @click="playPrev">⏮</button>
-            <button class="np-ctrl main" @click="togglePlay">{{ playerState.loading ? '…' : playerState.playing ? '⏸' : '▶' }}</button>
-            <button class="np-ctrl" @click="playNext">⏭</button>
+            <button class="np-ctrl" title="上一首" @click="playPrev">
+              <svg viewBox="0 0 24 24" width="22" height="22"><path d="M6 5h2v14H6zM20 5v14L9 12z" fill="currentColor"/></svg>
+            </button>
+            <button class="np-ctrl main" title="播放/暂停" @click="togglePlay">
+              <svg v-if="!playerState.playing" viewBox="0 0 24 24" width="26" height="26"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>
+              <svg v-else viewBox="0 0 24 24" width="26" height="26"><path d="M7 5h4v14H7zM13 5h4v14h-4z" fill="currentColor"/></svg>
+            </button>
+            <button class="np-ctrl" title="下一首" @click="playNext">
+              <svg viewBox="0 0 24 24" width="22" height="22"><path d="M16 5h2v14h-2zM4 5l11 7-11 7z" fill="currentColor"/></svg>
+            </button>
           </div>
           <div class="np-progress">
             <span class="time">{{ fmt(playerState.currentTime) }}</span>
@@ -58,6 +66,43 @@ import { lyricState } from '../stores/lyrics'
 
 const lyricDisplay = computed(() =>
   lyricState.lines.map((line, i) => ({ ...line, active: i === lyricState.activeIndex }))
+)
+
+const lyricBox = ref<HTMLElement | null>(null)
+
+function scrollLyricTo(idx: number): void {
+  if (idx < 0 || !lyricBox.value) return
+  const line = lyricBox.value.querySelector(`[data-line="${idx}"]`) as HTMLElement | null
+  if (line) {
+    lyricBox.value.scrollTo({
+      top: line.offsetTop - lyricBox.value.clientHeight / 2 + line.clientHeight / 2,
+      behavior: 'smooth'
+    })
+  }
+}
+
+// 点击歌词行跳转到该句时间点
+function onLyricClick(line: { time: number; text: string; active?: boolean }): void {
+  if (line.time > 0) seekTo(line.time)
+}
+
+// 打开播放页时立即滚动到当前行
+watch(
+  () => nowPlayingState.visible,
+  async (visible) => {
+    if (!visible) return
+    await nextTick()
+    scrollLyricTo(lyricState.activeIndex)
+  }
+)
+
+// 行变化 → 滚动歌词盒保持当前行居中
+watch(
+  () => lyricState.activeIndex,
+  async (idx) => {
+    await nextTick()
+    scrollLyricTo(idx)
+  }
 )
 
 const bgStyle = computed(() => {
@@ -195,6 +240,12 @@ function onSeek(event: MouseEvent): void {
   flex-direction: column;
   gap: 14px;
   mask-image: linear-gradient(transparent, #000 15%, #000 85%, transparent);
+}
+.lyric-line.clickable {
+  cursor: pointer;
+}
+.lyric-line.clickable:hover {
+  opacity: 0.85;
 }
 .lyric-line {
   font-size: 15px;

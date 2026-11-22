@@ -10,17 +10,32 @@
         <div class="meta-artist" :title="metaArtist">{{ metaArtist }}</div>
       </div>
       <div class="left-actions">
-        <button class="mini-btn" title="收藏" @click="toggleFavorite">♥</button>
-        <button class="mini-btn" title="下载" @click="downloadCurrentTrack">⬇</button>
+        <button class="mini-btn" title="收藏" @click="toggleFavorite">
+          <svg viewBox="0 0 24 24" width="16" height="16"><path d="M12 21s-7.5-4.7-10-9.3C.4 8.4 2.4 5 5.7 5c1.9 0 3.4 1 4.3 2.5h4c1-1.5 2.4-2.5 4.3-2.5 3.3 0 5.3 3.4 3.7 6.7C19.5 16.3 12 21 12 21z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+        </button>
+        <button class="mini-btn" title="下载" @click="downloadCurrentTrack">
+          <svg viewBox="0 0 24 24" width="16" height="16"><path d="M12 3v10M7 9l5 5 5-5M4 19h16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
       </div>
     </div>
     <div class="player-center">
       <div class="control-row">
-        <button class="ctrl ghost" title="MV">🎬</button>
-        <button class="ctrl" @click="playPrev">⏮</button>
-        <button class="ctrl main" @click="togglePlay">{{ playerState.loading ? '…' : playerState.playing ? '⏸' : '▶' }}</button>
-        <button class="ctrl" @click="playNext">⏭</button>
-        <button class="ctrl ghost" title="音量">🔊</button>
+        <button class="ctrl ghost" title="MV">
+          <svg viewBox="0 0 24 24" width="18" height="18"><path d="M4 6h16v12H4zM10 9l5 3-5 3z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+        </button>
+        <button class="ctrl" title="上一首" @click="playPrev">
+          <svg viewBox="0 0 24 24" width="20" height="20"><path d="M6 5h2v14H6zM20 5v14L9 12z" fill="currentColor"/></svg>
+        </button>
+        <button class="ctrl main" title="播放/暂停" @click="togglePlay">
+          <svg v-if="!playerState.playing" viewBox="0 0 24 24" width="22" height="22"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>
+          <svg v-else viewBox="0 0 24 24" width="22" height="22"><path d="M7 5h4v14H7zM13 5h4v14h-4z" fill="currentColor"/></svg>
+        </button>
+        <button class="ctrl" title="下一首" @click="playNext">
+          <svg viewBox="0 0 24 24" width="20" height="20"><path d="M16 5h2v14h-2zM4 5l11 7-11 7z" fill="currentColor"/></svg>
+        </button>
+        <button class="ctrl ghost" title="音量">
+          <svg viewBox="0 0 24 24" width="18" height="18"><path d="M4 9v6h4l5 4V5L8 9zM16.5 12a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4z" fill="currentColor"/></svg>
+        </button>
       </div>
       <div class="progress-row">
         <span class="time">{{ fmt(playerState.currentTime) }}</span>

@@ -28,6 +28,8 @@ import { mgSearch, mgLyric } from './sources/mg'
 import { qqLyric, wyLyricPlain, kwLyric, kgLyric } from './sources/lyrics'
 import { httpGetText, httpPostText } from './sources/types'
 import { GATEWAY_SERVERS } from './gateway/sign'
+import { getConfig, setConfig, type AppConfig } from './settings'
+import { listSources, importSourceDialog, deleteSource } from './sources-manager'
 
 const VITE_DEV_SERVER_URL = process.env.ELECTRON_RENDERER_URL || process.env.VITE_DEV_SERVER_URL
 const RENDERER_DIST = app.isPackaged ? join(app.getAppPath(), 'dist') : join(process.env.APP_ROOT || path.dirname(__dirname, '..'), 'dist')
@@ -961,6 +963,11 @@ function registerIpcHandlers(): void {
   })
 
   // 备份
+  ipcMain.handle('settings-get', () => getConfig())
+  ipcMain.handle('settings-set', (_e, patch) => setConfig(patch as Partial<AppConfig>))
+  ipcMain.handle('source-list', () => listSources())
+  ipcMain.handle('source-import', () => importSourceDialog(mainWindow ?? undefined))
+  ipcMain.handle('source-delete', (_e, fileName) => deleteSource(String(fileName)))
   ipcMain.handle('backup-get-status', () => wrapHandler(async () => backupService.getStatus()))
   ipcMain.handle('backup-set-settings', (_e, input) => wrapHandler(async () => backupService.setSettings(input)))
   ipcMain.handle('backup-create', (_e, input) => wrapHandler(async () => backupService.createBackup(input)))
