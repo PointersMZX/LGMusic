@@ -56,6 +56,10 @@ class SecureKwApiModule(private val reactContext: ReactApplicationContext) :
   /** B 站 WBI 键（复刻青听 v1.0.3） */
   private val WBI_MID = "7fa3d2b5f1c34b0d8a9e7c2f1b3d4e5f"
 
+  /** B 站桌面 UA（与桌面端 bili 适配器一致） */
+  private val BILI_UA =
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36"
+
   // ---------------------------------------------------------------------------
   // 设备档案
   // ---------------------------------------------------------------------------
@@ -239,6 +243,7 @@ class SecureKwApiModule(private val reactContext: ReactApplicationContext) :
           "mg" -> mgSearch(keyword, page, pagesize)
           "bili" -> biliSearch(keyword, page, pagesize)
           "kw" -> kwSearch(keyword, page, pagesize)
+          "qq" -> qqSearch(keyword, page, pagesize)
           else -> null
         }
         if (result != null) promise.resolve(toWritableArray(result))
@@ -296,11 +301,87 @@ class SecureKwApiModule(private val reactContext: ReactApplicationContext) :
     return out
   }
 
+  /** QQ 搜索（musicu.fcg POST DoSearchForQQMusicMobile，与桌面端 search-qq 一致） */
+  private fun qqSearch(keyword: String, page: Int, pagesize: Int): List<Map<String, String>> {
+    val payload = JSONObject().apply {
+      put("comm", JSONObject().apply {
+        put("ct", "11"); put("cv", "14090508"); put("v", "14090508")
+        put("tmeAppID", "qqmusic"); put("phonetype", "EBG-AN10")
+        put("deviceScore", "553.47"); put("devicelevel", "50"); put("newdevicelevel", "20")
+        put("rom", "HuaWei/EMOTION/EmotionUI_14.2.0"); put("os_ver", "12")
+        put("OpenUDID", "0"); put("OpenUDID2", "0"); put("QIMEI36", "0")
+        put("udid", "0"); put("chid", "0"); put("aid", "0"); put("oaid", "0")
+        put("taid", "0"); put("tid", "0"); put("wid", "0"); put("uid", "0"); put("sid", "0")
+        put("modeSwitch", "6"); put("teenMode", "0"); put("ui_mode", "2")
+        put("nettype", "1020"); put("v4ip", "")
+      })
+      put("req", JSONObject().apply {
+        put("module", "music.search.SearchCgiService")
+        put("method", "DoSearchForQQMusicMobile")
+        put("param", JSONObject().apply {
+          put("search_type", 0)
+          put("query", keyword)
+          put("page_num", page + 1)
+          put("num_per_page", pagesize)
+          put("highlight", 0); put("nqc_flag", 0); put("multi_zhida", 0)
+          put("cat", 2); put("grp", 1); put("sin", 0); put("sem", 0)
+        })
+      })
+    }.toString()
+    val text = jsonPostText(
+      "https://u.y.qq.com/cgi-bin/musicu.fcg",
+      payload,
+      mapOf(
+        "User-Agent" to "QQMusic 14090508(android 12)",
+        "Content-Type" to "application/json"
+      )
+    )
+    val json = JSONObject(text)
+    val body = json.optJSONObject("req")?.optJSONObject("data")?.optJSONObject("body")
+      ?: return emptyList()
+    val list = body.optJSONArray("item_song")
+      ?: body.optJSONObject("song")?.optJSONArray("list") ?: return emptyList()
+    val out = ArrayList<Map<String, String>>()
+    for (i in 0 until list.length()) {
+      val song = list.getJSONObject(i)
+      val singers = song.optJSONArray("singer")
+      val artist = (0 until (singers?.length() ?: 0)).joinToString(" / ") { j ->
+        singers?.getJSONObject(j)?.optString("name") ?: ""
+      }
+      val album = song.optJSONObject("album")
+      val albumMid = album?.optString("mid") ?: ""
+      out.add(
+        mapOf(
+          "rid" to song.optString("mid"),
+          "name" to song.optString("name"),
+          "artist" to artist,
+          "album" to (album?.optString("name") ?: ""),
+          "pic" to (if (albumMid.isNotBlank()) "http://y.gtimg.cn/music/photo_new/T002R300x300M000$albumMid.jpg" else ""),
+          "duration" to song.optInt("interval").toString(),
+          "keyword" to keyword
+        )
+      )
+    }
+    return out
+  }
+
   private fun buildGetRequest(url: String, headers: Map<String, String>): Request {
     return Request.Builder().url(url)
       .header("Accept", "application/json")
       .apply { headers.forEach { (k, v) -> header(k, v) } }
       .build()
+  }
+
+  /** POST JSON 文本（QQ musicu.fcg 等接口用） */
+  private fun jsonPostText(url: String, body: String, headers: Map<String, String>): String {
+    val request = Request.Builder().url(url)
+      .post(body.toRequestBody("application/json".toMediaType()))
+      .apply { headers.forEach { (k, v) -> header(k, v) } }
+      .build()
+    return client.newCall(request).execute().use { r ->
+      if (!r.isSuccessful) throw Exception("HTTP ${r.code}")
+      r.body?.string() ?: ""
+    }
   }
 
   private fun buildPostRequest(url: String, body: okhttp3.RequestBody, headers: Map<String, String>): Request {
@@ -312,63 +393,206 @@ class SecureKwApiModule(private val reactContext: ReactApplicationContext) :
       .build()
   }
 
-  /** 网易云搜索（interface3 v3，固定设备 Cookie） */
+  /** 网易云搜索（api/search/get/web 老版免签名接口，固定设备 Cookie） */
   private fun wySearch(keyword: String, page: Int, pagesize: Int): List<Map<String, String>> {
-    val c = JSONArray().apply {
-      put(JSONObject().apply {
-        put("s", 0)
-        put("type", 2)
-        put("limit", pagesize)
-        put("offset", page * pagesize)
-      })
-    }.toString()
+    val url =
+      "https://music.163.com/api/search/get/web?s=${encode(keyword)}&type=1&offset=${page * pagesize}&limit=$pagesize"
     val text = jsonGet(
-      "https://interface3.music.163.com/api/v3/search/song?c=${encode(c)}",
-      mapOf("Cookie" to WY_COOKIE, "User-Agent" to WY_UA))
-    return parseJsonList(text, keyword)
+      url,
+      mapOf(
+        "Cookie" to WY_COOKIE,
+        "User-Agent" to WY_UA,
+        "Referer" to "https://music.163.com/"
+      )
+    )
+    val json = JSONObject(text)
+    val songs = json.optJSONObject("result")?.optJSONArray("songs") ?: return emptyList()
+    val out = ArrayList<Map<String, String>>()
+    for (i in 0 until songs.length()) {
+      val song = songs.getJSONObject(i)
+      val artists = song.optJSONArray("artists")
+      val artist = (0 until (artists?.length() ?: 0)).joinToString(" / ") { j ->
+        artists?.getJSONObject(j)?.optString("name") ?: ""
+      }
+      val album = song.optJSONObject("album")
+      out.add(
+        mapOf(
+          "rid" to song.optInt("id").toString(),
+          "name" to song.optString("name"),
+          "artist" to artist,
+          "album" to (album?.optString("name") ?: ""),
+          "pic" to (album?.optString("img1v1Url") ?: ""),
+          "duration" to (song.optLong("duration") / 1000).toString(),
+          "keyword" to keyword
+        )
+      )
+    }
+    return out
   }
 
-  /** 咪咕搜索（jadeite searchAll） */
+  /** 咪咕搜索（jadeite searchAll + yyapp 双盐 MD5 签名，与桌面端 mg 适配器一致） */
   private fun mgSearch(keyword: String, page: Int, pagesize: Int): List<Map<String, String>> {
-    val url = "https://jadeite.migu.cn/music_search/v3/search/searchAll?keyword=${encode(keyword)}&pageNo=${page}&pageSize=${pagesize}&v=3.0"
-    val text = jsonGet(url, mapOf("Referer" to "https://music.migu.cn/", "User-Agent" to "Mozilla/5.0 (Linux; Android 10; LGmusic) AppleWebKit/537.36"))
-    return parseJsonList(text, keyword)
+    val deviceId = "963B7AA0D21511ED807EE5846EC87D20"
+    val timestamp = System.currentTimeMillis().toString()
+    val raw =
+      keyword + "6cdc72a439cef99a3418d2a78aa28c73" + "yyapp2d16148780a1dcc7408e06336b98cfd50" + deviceId + timestamp
+    val sign = MD5_HEX(raw)
+    val searchSwitch = encode(
+      "{\"song\":1,\"album\":0,\"singer\":0,\"tagSong\":1,\"mvSong\":0,\"bestShow\":1,\"songlist\":0,\"lyricSong\":0}"
+    )
+    val url =
+      "https://jadeite.migu.cn/music_search/v3/search/searchAll?isCorrect=0&isCopyright=1&searchSwitch=$searchSwitch&pageSize=$pagesize&text=${encode(keyword)}&pageNo=${page + 1}&sort=0&sid=USS"
+    val text = jsonGet(
+      url,
+      mapOf(
+        "uiVersion" to "A_music_3.6.1",
+        "deviceId" to deviceId,
+        "timestamp" to timestamp,
+        "sign" to sign,
+        "channel" to "0146921",
+        "User-Agent" to "Mozilla/5.0 (Linux; U; Android 11.0.0; zh-cn; MI 11 Build/OPR1.170623.032) AppleWebKit/534.30 (KHTML, like Gecko) Version/4.0 Mobile Safari/534.30"
+      )
+    )
+    val json = JSONObject(text)
+    val data = json.optJSONObject("data") ?: return emptyList()
+    val outer = data.optJSONObject("songResultData")?.optJSONArray("resultList")
+      ?: data.optJSONArray("songData") ?: return emptyList()
+    val out = ArrayList<Map<String, String>>()
+    // resultList 是嵌套数组 [[item,item],...]，拍平一层
+    for (g in 0 until outer.length()) {
+      val inner = outer.optJSONArray(g) ?: continue
+      for (i in 0 until inner.length()) {
+        val it = inner.getJSONObject(i)
+        val singers = it.optJSONArray("singers")
+        val artist = if (singers != null && singers.length() > 0) {
+          (0 until singers.length()).joinToString(" & ") { j ->
+            singers.getJSONObject(j).optString("name")
+          }
+        } else it.optString("singerName")
+        out.add(
+          mapOf(
+            "rid" to (if (it.optString("contentId").isNotBlank()) it.optString("contentId") else it.optString("copyrightId")),
+            "name" to (if (it.optString("songName").isNotBlank()) it.optString("songName") else it.optString("name")),
+            "artist" to artist,
+            "album" to it.optString("album"),
+            "pic" to (if (it.optString("albumImg").isNotBlank()) it.optString("albumImg") else it.optString("img")),
+            "duration" to it.optString("duration"),
+            "keyword" to keyword
+          )
+        )
+      }
+    }
+    return out
   }
 
-  /** B 站搜索（web-interface search/type + WBI 签名） */
+  /** 匿名设备标识 buvid3/buvid4（spi 接口，与桌面端 bili 适配器一致） */
+  private var biliBuvid: Pair<String, String>? = null
+
+  private fun fetchBuvid(): Pair<String, String> {
+    biliBuvid?.let { return it }
+    val text = jsonGet(
+      "https://api.bilibili.com/x/frontend/finger/spi",
+      mapOf("User-Agent" to BILI_UA)
+    )
+    val data = JSONObject(text).optJSONObject("data")
+    val b3 = data?.optString("b_3") ?: ""
+    val b4 = data?.optString("b_4") ?: ""
+    if (b3.isBlank() || b4.isBlank()) throw Exception("无法获取哔哩哔哩匿名设备标识")
+    val pair = Pair(b3, b4)
+    biliBuvid = pair
+    return pair
+  }
+
+  /** B 站搜索（search/type video 分区 + buvid Cookie，与桌面端 bili 适配器一致） */
   private fun biliSearch(keyword: String, page: Int, pagesize: Int): List<Map<String, String>> {
-    val pageNo = page * 30
-    val wc = pageNo.toString()
-    val wp = String.format("p%s%s", page + 1, pagesize.coerceAtMost(30))
-    val mid = WBI_MID
-    val sign = WBI_SIGN(keyword, wp, wc, mid)
-    val url = "https://api.bilibili.com/x/web-interface/search/type?search_type=music&keyword=${encode(keyword)}&page=$wp"
+    val (b3, b4) = fetchBuvid()
+    val query = mapOf(
+      "context" to "", "page" to (page + 1).toString(), "order" to "",
+      "page_size" to pagesize.coerceAtMost(30).toString(), "keyword" to keyword,
+      "duration" to "", "tids_1" to "", "tids_2" to "",
+      "__refresh__" to "true", "_extra" to "", "highlight" to "1",
+      "single_column" to "0", "platform" to "pc", "from_source" to "",
+      "search_type" to "video", "dynamic_offset" to "0")
+    val url = "https://api.bilibili.com/x/web-interface/search/type?" + appendQuery(query)
     val headers = mapOf(
-      "Referer" to "https://search.bilibili.com/",
+      "User-Agent" to BILI_UA,
+      "Accept" to "application/json, text/plain, */*",
+      "Accept-Language" to "zh-CN,zh;q=0.9,en;q=0.8",
       "Origin" to "https://search.bilibili.com",
-      "User-Agent" to "Mozilla/5.0 (Linux; Android 10; LGmusic) AppleWebKit/537.36",
-      "wts" to sign)
+      "Referer" to "https://search.bilibili.com/",
+      "Cookie" to "buvid3=$b3; buvid4=$b4")
     val text = jsonGet(url, headers)
-    return parseJsonList(text, keyword)
+    val json = JSONObject(text)
+    val list = json.optJSONObject("data")?.optJSONArray("result") ?: return emptyList()
+    val out = ArrayList<Map<String, String>>()
+    for (i in 0 until list.length()) {
+      val item = list.getJSONObject(i)
+      // B 站 duration 为 "mm:ss" 文本，转秒
+      val durRaw = item.optString("duration")
+      val durParts = durRaw.split(":")
+      val durSec = when (durParts.size) {
+        2 -> (durParts[0].toIntOrNull() ?: 0) * 60 + (durParts[1].toIntOrNull() ?: 0)
+        3 -> (durParts[0].toIntOrNull() ?: 0) * 3600 + (durParts[1].toIntOrNull() ?: 0) * 60 + (durParts[2].toIntOrNull() ?: 0)
+        else -> 0
+      }
+      out.add(
+        mapOf(
+          "rid" to item.optString("bvid"),
+          "name" to item.optString("title").replace(Regex("<[^>]*>"), ""),
+          "artist" to item.optString("author"),
+          "album" to "哔哩哔哩",
+          "pic" to item.optString("pic"),
+          "duration" to (if (durSec > 0) durSec.toString() else durRaw),
+          "keyword" to keyword
+        )
+      )
+    }
+    return out
   }
 
-  /** 酷我搜索（msearch song_search_v2，dfid/mid/uuid/token 参数） */
+  /** 酷我搜索（search.kuwo.cn/r.s 老版接口，abslist 大写字段，与桌面端 kw 搜索一致） */
   private fun kwSearch(keyword: String, page: Int, pagesize: Int): List<Map<String, String>> {
-    val dfid = "-" + System.currentTimeMillis() + Math.floor(Math.random() * 100000)
-    val mid = MD5_HEX(dfid)
-    val uuid = MD5_HEX(dfid + mid)
-    val clienttime = System.currentTimeMillis() / 1000
-    val token = MD5_HEX("11111111111111111111" + clienttime)
     val params: Map<String, String> = mapOf(
-      "key" to keyword, "page" to page.toString(), "pagesize" to pagesize.toString(),
-      "dfid" to dfid, "mid" to mid, "uuid" to uuid,
-      "clienttime" to "$clienttime", "token" to token, "platform" to "web")
-    val url = "https://msearch.kuwo.cn/song_search_v2?" + appendQuery(params)
-    val headers = mutableMapOf(
-      "User-Agent" to KW_UA, "Referer" to "https://m.kuwo.cn/")
-    headers.put("x-forwarded-for", "1.0.1.114")
-    val text = jsonGet(url, headers)
-    return parseJsonList(text, keyword)
+      "client" to "kt", "all" to keyword, "pn" to page.toString(), "rn" to pagesize.toString(),
+      "uid" to "794762570", "ver" to "kwplayer_ar_9.2.2.1", "vipver" to "1",
+      "show_copyright_off" to "1", "newver" to "1", "ft" to "music", "cluster" to "0",
+      "strategy" to "2012", "encoding" to "utf8", "rformat" to "json", "vermerge" to "1",
+      "mobi" to "1", "issubtitle" to "1")
+    val url = "https://search.kuwo.cn/r.s?" + appendQuery(params)
+    val text = jsonGet(
+      url,
+      mapOf("User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
+    )
+    val json = try {
+      JSONObject(text.trim())
+    } catch (e: Exception) {
+      throw Exception("kw无结果($url): " + text.take(80))
+    }
+    val list = json.optJSONArray("abslist") ?: return emptyList()
+    val out = ArrayList<Map<String, String>>()
+    for (i in 0 until list.length()) {
+      val item = list.getJSONObject(i)
+      val name = item.optString("SONGNAME").replace(Regex("<em>|</em>"), "")
+      val artist = item.optString("ARTIST").replace(Regex("<em>|</em>"), "")
+      val album = item.optString("ALBUM").replace(Regex("<em>|</em>"), "")
+      val rid = if (item.optString("RID").isNotBlank()) item.optString("RID")
+      else item.optString("MUSICRID").removePrefix("MUSIC_")
+      val pic = if (item.optString("hts_MVPIC").isNotBlank()) item.optString("hts_MVPIC")
+      else if (item.optString("web_albumpic_short").isNotBlank())
+        item.optString("web_albumpic_short") else item.optString("ALUMPIC")
+      out.add(
+        mapOf(
+          "rid" to rid,
+          "name" to name,
+          "artist" to artist,
+          "album" to album,
+          "pic" to pic,
+          "duration" to item.optString("DURATION"),
+          "keyword" to keyword
+        )
+      )
+    }
+    return out
   }
 
   private fun parseJsonList(text: String, keyword: String): List<Map<String, String>> {
@@ -413,22 +637,27 @@ class SecureKwApiModule(private val reactContext: ReactApplicationContext) :
 
   private fun appendQuery(params: Map<String, String>): String {
     val sb = StringBuilder()
+    var first = true
     for ((k, v) in params) {
+      if (!first) sb.append('&')
       sb.append(encode(k)).append('=').append(encode(v))
+      first = false
     }
     return sb.toString()
   }
 
   private fun encode(s: String): String {
-    val safe = setOf('a'..'z', 'A'..'Z', '0'..'9', '-', '_', '.', '~', '*', '(', ')', '!', '&', ',', '?', ':')
     val out = StringBuilder()
-    for (i in s.indices) {
-      val v = s[i].code
-      if (safe.contains(v)) {
-        out.append(s[i])
+    for (ch in s) {
+      val ok = ch in 'a'..'z' || ch in 'A'..'Z' || ch in '0'..'9' ||
+        ch == '-' || ch == '_' || ch == '.' || ch == '~' || ch == '*' ||
+        ch == '(' || ch == ')' || ch == '!' || ch == '&' || ch == ',' ||
+        ch == '?' || ch == ':' || ch == '/' || ch == '='
+      if (ok) {
+        out.append(ch)
       } else {
         out.append('%')
-        out.append(String.format("%02x", v and 0xFF))
+        out.append(String.format("%02x", ch.code and 0xFF))
       }
     }
     return out.toString()
