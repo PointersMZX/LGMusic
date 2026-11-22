@@ -61,6 +61,7 @@
         <main class="app-content">
           <SearchPage v-if="activeNav === 'search'" :initial-keyword="pendingKeyword" />
           <HomePage v-else-if="activeNav === 'home'" @navigate="activeNav = $event" />
+          <ToplistPage v-else-if="activeNav === 'toplist'" />
           <PlaylistSquare v-else-if="activeNav === 'playlist'" />
           <MvPage v-else-if="activeNav === 'mv'" />
           <FavoritesPage v-else-if="activeNav === 'favorites'" />
@@ -84,6 +85,7 @@ import { computed, ref } from 'vue'
 import SearchPage from './components/SearchPage.vue'
 import PlayerBar from './components/PlayerBar.vue'
 import HomePage from './components/HomePage.vue'
+import ToplistPage from './components/ToplistPage.vue'
 import PlaylistSquare from './components/PlaylistSquare.vue'
 import MvPage from './components/MvPage.vue'
 import NowPlayingPage from './components/NowPlayingPage.vue'
@@ -118,6 +120,7 @@ const activeLabel = computed(() => {
   if (known) return known
   if (activeNav.value === 'account') return '账号'
   if (activeNav.value === 'settings') return '设置'
+  if (activeNav.value === 'toplist') return '排行榜'
   return ''
 })
 

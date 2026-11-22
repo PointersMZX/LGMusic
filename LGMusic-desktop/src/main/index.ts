@@ -29,7 +29,7 @@ import { qqLyric, wyLyricPlain, kwLyric, kgLyric } from './sources/lyrics'
 import { httpGetText, httpPostText } from './sources/types'
 import { GATEWAY_SERVERS } from './gateway/sign'
 
-const VITE_DEV_SERVER_URL = process.env.VITE_DEV_SERVER_URL
+const VITE_DEV_SERVER_URL = process.env.ELECTRON_RENDERER_URL || process.env.VITE_DEV_SERVER_URL
 const RENDERER_DIST = app.isPackaged ? join(app.getAppPath(), 'dist') : join(process.env.APP_ROOT || path.dirname(__dirname, '..'), 'dist')
 
 process.env.APP_ROOT = process.env.APP_ROOT || path.join(__dirname, '..')

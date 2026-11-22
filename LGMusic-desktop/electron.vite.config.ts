@@ -21,6 +21,11 @@ export default defineConfig({
         '@': resolve('src/renderer/src'),
         '@renderer': resolve('src/renderer/src')
       }
+    },
+    server: {
+      // 5173 落入 Windows Hyper-V 动态保留端口范围（5041-5440），固定用 5501
+      port: Number(process.env.LG_DEV_PORT) || 5501,
+      strictPort: true
     }
   }
 })
