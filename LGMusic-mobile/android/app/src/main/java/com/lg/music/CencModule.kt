@@ -23,7 +23,11 @@ class CencModule(private val reactContext: ReactApplicationContext) :
   override fun getName(): String = "CencModule"
 
   init {
-    System.loadLibrary("libqingmusic-cenc")
+    try {
+      System.loadLibrary("qingmusic-cenc")
+    } catch (e: UnsatisfiedLinkError) {
+      // cenc 库仅随 arm64-v8a 带入；x86_64 模拟器等无库环境降级为不加载，模块仍注册
+    }
   }
 
   private val vib: Vibrator? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {

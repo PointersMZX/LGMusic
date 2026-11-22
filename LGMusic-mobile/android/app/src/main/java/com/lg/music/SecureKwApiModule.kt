@@ -241,7 +241,7 @@ class SecureKwApiModule(private val reactContext: ReactApplicationContext) :
           "kw" -> kwSearch(keyword, page, pagesize)
           else -> null
         }
-        if (result != null) promise.resolve(result)
+        if (result != null) promise.resolve(toWritableArray(result))
         else promise.reject("SEARCH_UNSUPPORTED", "不支持的音源")
       } catch (e: Exception) {
         promise.reject("SEARCH_FAILED", e.message ?: "搜索失败")
@@ -249,23 +249,51 @@ class SecureKwApiModule(private val reactContext: ReactApplicationContext) :
     }.start()
   }
 
-  /** 酷狗歌单搜索（网关 /v1/search/special，x-router 头） */
-  private fun kgSearch(keyword: String, page: Int, pagesize: Int): List<Map<String, String>> {
-    val body = JSONObject().apply {
-      put("source", "kg")
-      put("keyword", keyword)
-      put("page", page)
-      put("pagesize", pagesize)
-    }.toString()
-    val headers = gatewayHeaders("POST", "/v1/search/special", body)
-    val url = "/v1/search/special?keyword=${encode(keyword)}&platform=WebFilter&page=$page&pagesize=$pagesize&iscorrection=1&area_code=1"
-    val request = buildPostRequest(
-      servers.first() + url, body.toRequestBody("application/json".toMediaType()), headers)
-    val text = client.newCall(request).execute().use { r ->
-      if (!r.isSuccessful) throw Exception("HTTP ${r.code}")
-      r.body?.string() ?: ""
+  /** List<Map> → WritableArray（RN 桥 promise.resolve 仅接受可转换类型） */
+  private fun toWritableArray(list: List<Map<String, String>>): com.facebook.react.bridge.WritableArray {
+    val arr = com.facebook.react.bridge.Arguments.createArray()
+    for (item in list) {
+      val map = com.facebook.react.bridge.Arguments.createMap()
+      for ((k, v) in item) {
+        if (v != null && v.isNotEmpty()) map.putString(k, v)
+      }
+      arr.pushMap(map)
     }
-    return parseJsonList(text, keyword)
+    return arr
+  }
+
+  /** 酷狗搜索（songsearch 直连，与桌面端 kg 搜索一致） */
+  private fun kgSearch(keyword: String, page: Int, pagesize: Int): List<Map<String, String>> {
+    val url =
+      "https://songsearch.kugou.com/song_search_v2?keyword=${encode(keyword)}&page=$page&pagesize=$pagesize&userid=0&clientver=&platform=WebFilter&filter=2&iscorrection=1&privilege_filter=0&area_code=1"
+    val text = jsonGet(
+      url,
+      mapOf(
+        "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36",
+        "Referer" to "https://www.kugou.com/"
+      )
+    )
+    val json = JSONObject(text)
+    val lists = json.optJSONObject("data")?.optJSONArray("lists") ?: return emptyList()
+    val out = ArrayList<Map<String, String>>()
+    for (i in 0 until lists.length()) {
+      val item = lists.getJSONObject(i)
+      val fileName = item.optString("FileName")
+      val parts = fileName.split(" - ")
+      val cover = item.optString("Image").replace("{size}", "480").replace("/{size}", "/480")
+      out.add(
+        mapOf(
+          "rid" to item.optString("FileHash"),
+          "name" to (if (parts.size > 1) parts.drop(1).joinToString(" - ") else fileName),
+          "artist" to (if (parts.isNotEmpty() && parts[0].isNotBlank()) parts[0] else item.optString("SingerName")),
+          "album" to item.optString("AlbumName"),
+          "pic" to cover,
+          "duration" to item.optString("Duration"),
+          "keyword" to keyword
+        )
+      )
+    }
+    return out
   }
 
   private fun buildGetRequest(url: String, headers: Map<String, String>): Request {

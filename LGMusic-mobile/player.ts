@@ -89,9 +89,7 @@ export async function searchMusic(
   page: number,
   pagesize: number
 ): Promise<PlayableTrack[]> {
-  const res = await secureApi.search(source, keyword, page, pagesize, (e) => {
-    throw new Error(e?.message || '搜索失败')
-  })
+  const res = await secureApi.search(source, keyword, page, pagesize)
   return (res || []).map((item) => ({
     rid: item.rid ?? '',
     name: item.name ?? '',
