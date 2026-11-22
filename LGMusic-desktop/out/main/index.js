@@ -4,7 +4,7 @@ import path, { join as join$1 } from "node:path";
 import { Stream } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import os from "node:os";
-import { randomUUID, createHmac, randomBytes, createHash } from "node:crypto";
+import { randomUUID, createHmac, randomBytes, createHash, createCipheriv, publicEncrypt, constants } from "node:crypto";
 import http from "node:http";
 import https from "node:https";
 import fsp from "node:fs/promises";
@@ -2653,8 +2653,8 @@ function kgSignature(params, body = null, saltAlt = false) {
   }).join("");
   return md5Hex(salt + sorted + (body !== null ? body : "") + salt);
 }
-const WY_COOKIE = "EVNSM=1.0.0; osver=14; MUSIC_U=; NMCID=oyapoh.1707738771510.01.4; versioncode=1000022; URS_APPID=E26D3B65474AEE2FC2586DCAE42BCF0CBEA421D4CB53C42A74EBEF035ACE98E0B6F0E44087D61EFC06BE92279CD6EEC6; buildver=231106171719; resolution=3040x1440; sDeviceId=bnVsbAljNjowOTpiMzphYzo4NDowNgk4NzNjZWYxNGQxYjY4MWI5CWY1ZjVhNTIxOGFjNDA3ZmY%3D; os=magicos; channel=netease; screenType=other; deviceId=bnVsbAljNjowOTpiMzphYzo4NDowNgk4NzNjZWYxNGQxYjY4MWI5CWY1ZjVhNTIxOGFjNDA3ZmY%3D; appver=1.0.22; NMDI=Q1NKTQkBDACdyBclTqtsEuV2ecI7AAAAKyV%2B9xWzSJenvmG2RFU9D82gQoo96WkqNFpO59px3PrvpN5DF0cFPRJ3BXMIBMdBOcxhjUoyxI898tU%3D; ntes_kaola_ad=1; language=zh-CN; mobilename=22041211AC; __csrf=b383e0976daab42a166a9544f90a1dc3; NMTID=00O3nhQ8Br3egFvnEAIjk_hf0yT9jsAAAGNnSmw4w; packageType=release";
-const WY_UA = "NeteaseMusic/1.0.22.231106171719(1000022);Dalvik/2.1.0 (Linux; U; Android 14; 22041211AC Build/UP1A.231005.007)";
+const WY_COOKIE$1 = "EVNSM=1.0.0; osver=14; MUSIC_U=; NMCID=oyapoh.1707738771510.01.4; versioncode=1000022; URS_APPID=E26D3B65474AEE2FC2586DCAE42BCF0CBEA421D4CB53C42A74EBEF035ACE98E0B6F0E44087D61EFC06BE92279CD6EEC6; buildver=231106171719; resolution=3040x1440; sDeviceId=bnVsbAljNjowOTpiMzphYzo4NDowNgk4NzNjZWYxNGQxYjY4MWI5CWY1ZjVhNTIxOGFjNDA3ZmY%3D; os=magicos; channel=netease; screenType=other; deviceId=bnVsbAljNjowOTpiMzphYzo4NDowNgk4NzNjZWYxNGQxYjY4MWI5CWY1ZjVhNTIxOGFjNDA3ZmY%3D; appver=1.0.22; NMDI=Q1NKTQkBDACdyBclTqtsEuV2ecI7AAAAKyV%2B9xWzSJenvmG2RFU9D82gQoo96WkqNFpO59px3PrvpN5DF0cFPRJ3BXMIBMdBOcxhjUoyxI898tU%3D; ntes_kaola_ad=1; language=zh-CN; mobilename=22041211AC; __csrf=b383e0976daab42a166a9544f90a1dc3; NMTID=00O3nhQ8Br3egFvnEAIjk_hf0yT9jsAAAGNnSmw4w; packageType=release";
+const WY_UA$1 = "NeteaseMusic/1.0.22.231106171719(1000022);Dalvik/2.1.0 (Linux; U; Android 14; 22041211AC Build/UP1A.231005.007)";
 const WY_LEVELS = [
   ["standard", [0, 128e3]],
   ["exhigh", [1, 32e4]],
@@ -2668,7 +2668,7 @@ async function wySongDetail(id, level = "standard") {
   try {
     const c = JSON.stringify([{ id: parseInt(String(id)) }]);
     const url = `http://interface3.music.163.com/api/v3/song/detail?c=${encodeURIComponent(c)}`;
-    const text = await httpGetText(url, { Cookie: WY_COOKIE, "User-Agent": WY_UA });
+    const text = await httpGetText(url, { Cookie: WY_COOKIE$1, "User-Agent": WY_UA$1 });
     const json = JSON.parse(text);
     if (!json.songs || json.songs.length === 0) return null;
     const song = json.songs[0];
@@ -2776,6 +2776,13 @@ async function wyPlaylist(playlistId, count = 30) {
     console.error("getWyPlaylist error:", err);
     return { code: 500, msg: "获取歌单失败: " + String(err), data: null };
   }
+}
+function wyEapiEncrypt(path2, data) {
+  const secret = "e82ckenh8dichen8";
+  const digest = createHash("md5").update(`nobody${path2}use${data}md5forencrypt`).digest("hex");
+  const message = `${path2}-36cd479b6b5-${data}-36cd479b6b5-${digest}`;
+  const cipher = createCipheriv("aes-128-ecb", Buffer.from(secret), null);
+  return cipher.update(message, "utf8", "hex") + cipher.final("hex");
 }
 const KW_UA = "Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/37.0.2062.120 Safari/537.36";
 const KW_BR_MAP = {
@@ -6920,6 +6927,140 @@ async function mgLyric(contentId) {
     return "";
   }
 }
+const WY_HOST = "interface3.music.163.com";
+const WY_UA = "Mozilla/5.0 (Linux; Android 12; 22041211AC) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.79 Mobile Safari/537.36";
+const WY_COOKIE = "appver=1.0.22; os=android; channel=netease; MUSIC_U=; NMTID=00O3nhQ8Br3egFvnEAIjk_hf0yT9jsAAAGNnSmw4w; __csrf=b383e0976daab42a166a9544f90a1dc3";
+function eapiPost(eapiPath, apiPath, payload) {
+  const sign = wyEapiEncrypt(apiPath, JSON.stringify(payload));
+  const body = `params=${encodeURIComponent(sign)}`;
+  return new Promise((resolve, reject) => {
+    const req = http.request(
+      {
+        hostname: WY_HOST,
+        port: 80,
+        path: `/eapi${eapiPath}`,
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          "Content-Length": Buffer.byteLength(body),
+          Cookie: WY_COOKIE,
+          "User-Agent": WY_UA,
+          Referer: "https://music.163.com/"
+        }
+      },
+      (res) => {
+        let data = "";
+        res.setEncoding("utf8");
+        res.on("data", (chunk) => data += chunk ?? "");
+        res.on("end", () => {
+          try {
+            resolve(JSON.parse(data));
+          } catch {
+            reject(new Error("MV 接口返回异常"));
+          }
+        });
+      }
+    );
+    req.on("error", reject);
+    req.write(body);
+    req.end();
+  });
+}
+async function wyMvList(page = 1, limit = 24) {
+  try {
+    const offset = (page - 1) * limit;
+    const res = await eapiPost("/mv/all", "/api/mv/all", {
+      limit,
+      offset,
+      area: "",
+      order: "hot",
+      type: "全部"
+    });
+    if (res.code !== 200) return { code: res.code, msg: res.msg, mvs: [] };
+    const list = Array.isArray(res.data) ? res.data : [];
+    const mvs = list.map((it) => ({
+      id: Number(it.id || 0),
+      name: String(it.name || ""),
+      artist: String(it.artistName || it.artists?.[0]?.name || ""),
+      pic: String(it.cover || it.picUrl || ""),
+      playCount: Number(it.playCount || 0),
+      duration: Number(it.duration || 0) / 1e3
+    }));
+    return { code: 200, mvs };
+  } catch (err) {
+    return { code: 500, msg: "获取 MV 列表失败: " + String(err), mvs: [] };
+  }
+}
+const WEPAPI_SECRET = "0CoJUm6Qyw8W8jud";
+const WEPAPI_PUBLIC_KEY = "010001";
+const WEPAPI_MODULUS = "00e0b509f6259df8642dbc35662901477df22677ec152b5ff68ace615bb7b725152b3ab17a876aea8a5aa76d2e417629ec4ee341f56135fccf695280104e0312ecbda92557c93870114af6c9d05c4f7f0c3685b7a46bee255932575cce10b424f8138fe5dfc7f1b0a3c9e0d3d9f6b5c4f3d8e6a4b2c1d0f9e8";
+function weapiAes(text, key) {
+  const cipher = createCipheriv("aes-128-cbc", Buffer.from(key, "utf8"), Buffer.from("0102030405060708", "utf8"));
+  const enc = Buffer.concat([cipher.update(text, "utf8"), cipher.final()]);
+  return enc.toString("base64");
+}
+function weapiRsa(text) {
+  const key = {
+    kty: "RSA",
+    n: Buffer.from(WEPAPI_MODULUS, "hex"),
+    e: Buffer.from(WEPAPI_PUBLIC_KEY, "hex")
+  };
+  const enc = publicEncrypt({ key, padding: constants.RSA_PKCS1_PADDING }, Buffer.from(text, "utf8"));
+  return enc.toString("hex");
+}
+function weapiEncrypt(data) {
+  const text = JSON.stringify(data);
+  const randomKey = randomBytes(8).toString("hex").slice(0, 16);
+  const params = weapiAes(weapiAes(text, randomKey), WEPAPI_SECRET);
+  const encSecKey = weapiRsa(randomKey);
+  return { params, encSecKey };
+}
+function weapiPost(weapiPath, payload) {
+  const { params, encSecKey } = weapiEncrypt({ ...payload, csrf_token: "" });
+  const body = `params=${encodeURIComponent(params)}&encSecKey=${encodeURIComponent(encSecKey)}`;
+  return new Promise((resolve, reject) => {
+    const req = https.request(
+      {
+        hostname: "music.163.com",
+        port: 443,
+        path: `/weapi${weapiPath}`,
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          "Content-Length": Buffer.byteLength(body),
+          Cookie: WY_COOKIE,
+          "User-Agent": WY_UA,
+          Referer: "https://music.163.com/"
+        }
+      },
+      (res) => {
+        let data = "";
+        res.setEncoding("utf8");
+        res.on("data", (chunk) => data += chunk ?? "");
+        res.on("end", () => {
+          try {
+            resolve(JSON.parse(data));
+          } catch {
+            reject(new Error("MV 播放接口返回异常"));
+          }
+        });
+      }
+    );
+    req.on("error", reject);
+    req.write(body);
+    req.end();
+  });
+}
+async function wyMvUrl(mvid) {
+  try {
+    const res = await weapiPost("/song/enhance/play/mv", { ids: [mvid] });
+    if (res.code !== 200) return "";
+    const list = res.data || [];
+    return String(list[0]?.url || "");
+  } catch {
+    return "";
+  }
+}
 function decodeBase64Text(input) {
   return Buffer.from(input, "base64").toString("utf8");
 }
@@ -8026,7 +8167,7 @@ function registerIpcHandlers() {
     if (!keyword) return { code: 400, msg: "请提供搜索关键词", data: [] };
     const page = input.page ?? 0;
     const limit = input.limit ?? 30;
-    const { createHash: createHash2, createCipheriv } = await import("node:crypto");
+    const { createHash: createHash2, createCipheriv: createCipheriv2 } = await import("node:crypto");
     const secret = "e82ckenh8dichen8";
     const payload = JSON.stringify({
       s: keyword,
@@ -8037,7 +8178,7 @@ function registerIpcHandlers() {
     });
     const digest = createHash2("md5").update(`nobody/api/cloudsearch/pcuse${payload}md5forencrypt`).digest("hex");
     const message = `/api/cloudsearch/pc-36cd479b6b5-${payload}-36cd479b6b5-${digest}`;
-    const cipher = createCipheriv("aes-128-ecb", Buffer.from(secret), null);
+    const cipher = createCipheriv2("aes-128-ecb", Buffer.from(secret), null);
     const sign = (cipher.update(message, "utf8", "hex") + cipher.final("hex")).toUpperCase();
     const body = new URLSearchParams({ params: sign }).toString();
     return new Promise((resolve, reject) => {
@@ -8247,6 +8388,8 @@ function registerIpcHandlers() {
     }
   });
   ipcMain.handle("get-wy-playlist", async (_e, input) => wyPlaylist(input.id, input.limit));
+  ipcMain.handle("mv-list", async (_e, input) => wyMvList(Number(input?.page) || 1, Number(input?.limit) || 24));
+  ipcMain.handle("mv-url", async (_e, input) => wyMvUrl(Number(input?.id) || 0));
   ipcMain.handle("get-song-detail-wy", async (_e, input) => wySongDetail(input));
   ipcMain.handle("get-kw-playlist", async (_e, input) => kwPlaylist(input.id, input.page, input.limit));
   ipcMain.handle("get-song-detail-kw", async (_e, input) => kwSongDetail(input));
