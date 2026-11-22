@@ -25,6 +25,7 @@ import { wyPlaylist, wySongDetail } from './sources/wy'
 import { kwPlaylist, kwSongDetail } from './sources/kw'
 import { qqPlaylist, qqPlaylistSquare, qqSongDetail } from './sources/qq'
 import { mgSearch, mgLyric } from './sources/mg'
+import { wyMvList, wyMvUrl } from './sources/mv'
 import { qqLyric, wyLyricPlain, kwLyric, kgLyric } from './sources/lyrics'
 import { httpGetText, httpPostText } from './sources/types'
 import { GATEWAY_SERVERS } from './gateway/sign'
@@ -908,6 +909,8 @@ function registerIpcHandlers(): void {
 
   // 歌单与详情
   ipcMain.handle('get-wy-playlist', async (_e, input) => wyPlaylist(input.id, input.limit))
+  ipcMain.handle('mv-list', async (_e, input) => wyMvList(Number(input?.page) || 1, Number(input?.limit) || 24))
+  ipcMain.handle('mv-url', async (_e, input) => wyMvUrl(Number(input?.id) || 0))
   ipcMain.handle('get-song-detail-wy', async (_e, input) => wySongDetail(input))
   ipcMain.handle('get-kw-playlist', async (_e, input) => kwPlaylist(input.id, input.page, input.limit))
   ipcMain.handle('get-song-detail-kw', async (_e, input) => kwSongDetail(input))

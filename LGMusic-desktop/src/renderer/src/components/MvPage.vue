@@ -8,59 +8,119 @@
     </div>
     <div class="section-label">
       <strong>热门 MV</strong>
-      <span class="section-sub">发现正在流行的音乐视频</span>
+      <span class="section-sub">网易云音乐视频</span>
     </div>
     <div v-if="error" class="error-tip">{{ error }}</div>
     <div class="mv-grid">
-      <div v-for="(mv, i) in mvs" :key="i" class="mv-card">
+      <div v-for="(mv, i) in mvs" :key="i" class="mv-card" @click="playMv(mv)">
         <div class="mv-cover">
           <img v-if="mv.pic" :src="mv.pic" referrerpolicy="no-referrer" />
           <span v-else class="cover-fallback">🎬</span>
           <span class="hot-badge">HOT</span>
-          <span class="mv-count">▶ {{ formatCount(mv.count) }}</span>
-          <span class="mv-duration">{{ mv.duration || '' }}</span>
+          <span class="mv-count">▶ {{ formatCount(mv.playCount) }}</span>
+          <span class="mv-duration">{{ formatDuration(mv.duration) }}</span>
         </div>
         <div class="mv-name" :title="mv.name">{{ mv.name }}</div>
         <div class="mv-artist">{{ mv.artist }}</div>
       </div>
     </div>
     <div v-if="loading" class="loading-tip">加载中…</div>
+
+    <!-- MV 播放弹层 -->
+    <div v-if="playing" class="mv-player" @click.self="closePlayer">
+      <div class="player-box">
+        <div class="player-head">
+          <span class="player-title">{{ playing.name }}</span>
+          <button class="player-close" @click="closePlayer">×</button>
+        </div>
+        <video
+          ref="videoEl"
+          class="player-video"
+          :src="playing.url"
+          controls
+          autoplay
+          playsinline
+        ></video>
+        <div class="player-meta">{{ playing.artist }}</div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { nextTick, onMounted, ref } from 'vue'
 import { api } from '../api'
 
+interface MvItem {
+  id: number
+  name: string
+  artist: string
+  pic: string
+  playCount: number
+  duration: number
+}
+
 const keyword = ref('')
-const mvs = ref<Array<{ name: string; artist: string; pic?: string; count?: number; duration?: string; id?: string }>>([])
+const mvs = ref<MvItem[]>([])
 const loading = ref(false)
 const error = ref('')
+const playing = ref<(MvItem & { url: string }) | null>(null)
+const videoEl = ref<HTMLVideoElement | null>(null)
 
-function formatCount(count?: number): string {
+function formatCount(count: number): string {
   if (!count) return ''
-  return count >= 100000000 ? `${Math.floor(count / 100000000)}亿` : count >= 10000 ? `${Math.floor(count / 10000)}万` : String(count)
+  return count >= 100000000
+    ? `${Math.floor(count / 100000000)}亿`
+    : count >= 10000
+      ? `${Math.floor(count / 10000)}万`
+      : String(count)
+}
+
+function formatDuration(sec: number): string {
+  if (!sec) return ''
+  const m = Math.floor(sec / 60)
+  const s = Math.floor(sec % 60)
+  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
 }
 
 async function load(): Promise<void> {
   loading.value = true
   error.value = ''
   try {
-    // MV 数据走网关 MV 代理端点（main 进程待补 mv-list IPC 时接入，此处先以搜索接口占位骨架）
-    const res = await api.invoke('get-qq-playlist-square', { category: '10000000', page: 1, limit: 15 }).catch(() => null)
-    if (res?.code === 200) {
-      mvs.value = (res.data?.musicList || []).slice(0, 15).map((it: Record<string, unknown>) => ({
-        name: String(it.name || ''),
-        artist: String(it.uname || ''),
-        pic: (it.pic as string) || undefined,
-        count: Number(it.PlayCnt || 0) || undefined
-      }))
+    const res = (await api.invoke('mv-list', { page: 1, limit: 24 }).catch(() => null)) as {
+      code?: number
+      msg?: string
+      mvs?: MvItem[]
+    } | null
+    if (res?.code === 200 && res.mvs) {
+      mvs.value = res.mvs
     } else {
+      error.value = res?.msg || 'MV 列表加载失败'
       mvs.value = []
     }
   } finally {
     loading.value = false
   }
+}
+
+async function playMv(mv: MvItem): Promise<void> {
+  try {
+    const url = (await api.invoke('mv-url', { id: mv.id }).catch(() => '')) as string
+    if (!url) {
+      error.value = 'MV 播放地址获取失败'
+      return
+    }
+    playing.value = { ...mv, url }
+    await nextTick()
+    videoEl.value?.play().catch(() => {})
+  } catch {
+    error.value = 'MV 播放失败'
+  }
+}
+
+function closePlayer(): void {
+  videoEl.value?.pause()
+  playing.value = null
 }
 
 onMounted(load)
@@ -185,5 +245,53 @@ onMounted(load)
   color: var(--text-tertiary);
   padding: 24px 0;
   text-align: center;
+}
+.mv-player {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.7);
+}
+.player-box {
+  width: min(720px, 86vw);
+  background: #101113;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+.player-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+}
+.player-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.player-close {
+  border: none;
+  background: transparent;
+  color: #fff;
+  font-size: 22px;
+  cursor: pointer;
+  padding: 0 4px;
+}
+.player-video {
+  width: 100%;
+  max-height: 60vh;
+  background: #000;
+}
+.player-meta {
+  padding: 10px 16px 14px;
+  color: #aaa;
+  font-size: 13px;
 }
 </style>
