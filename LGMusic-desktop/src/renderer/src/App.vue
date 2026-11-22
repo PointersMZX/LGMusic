@@ -67,6 +67,7 @@
           <FavoritesPage v-else-if="activeNav === 'favorites'" />
           <DownloadsPage v-else-if="activeNav === 'downloads'" />
           <SettingsPage v-else-if="activeNav === 'settings'" />
+          <RecentPage v-else-if="activeNav === 'recent'" />
           <div v-else class="placeholder-page">
             <h1>{{ activeLabel }}</h1>
             <p>复刻开发中 —— 本页面将按青听样式重建。</p>
@@ -93,6 +94,7 @@ import PlaylistDetailPage from './components/PlaylistDetailPage.vue'
 import FavoritesPage from './components/FavoritesPage.vue'
 import DownloadsPage from './components/DownloadsPage.vue'
 import SettingsPage from './components/SettingsPage.vue'
+import RecentPage from './components/RecentPage.vue'
 import { api } from './api'
 
 function winControl(action: string): void {

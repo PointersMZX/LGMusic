@@ -12,6 +12,14 @@ interface PlayerState {
   duration: number
   level: string
   error: string
+  /** 播放历史（最近播放） */
+  playHistory: Array<{
+    ts: number
+    rid: string
+    source: string
+    name: string
+    artist: string
+  }>
 }
 
 export const playerState = reactive<PlayerState>({
@@ -23,8 +31,50 @@ export const playerState = reactive<PlayerState>({
   currentTime: 0,
   duration: 0,
   level: '',
-  error: ''
+  error: '',
+  playHistory: []
 })
+
+const PLAY_HISTORY_KEY = 'lg-music-play-history'
+
+function loadPlayHistory(): PlayerState['playHistory'] {
+  try {
+    const raw = localStorage.getItem(PLAY_HISTORY_KEY)
+    if (!raw) return []
+    const parsed = JSON.parse(raw) as Array<PlayerState['playHistory'][0]>
+    return Array.isArray(parsed) ? parsed : []
+  } catch {
+    return []
+  }
+}
+
+function persistPlayHistory(): void {
+  try {
+    localStorage.setItem(PLAY_HISTORY_KEY, JSON.stringify(playerState.playHistory))
+  } catch {
+    // 存储失败忽略
+  }
+}
+
+/** 记录最近播放（播放/暂停时记录当前曲目，按 rid 去重保留最近的） */
+function recordPlayHistory(track: UnifiedTrack | null): void {
+  if (!track) return
+  const entry = {
+    ts: Date.now(),
+    rid: track.rid,
+    source: track.source,
+    name: track.name,
+    artist: track.artist
+  }
+  const idx = playerState.playHistory.findIndex((h) => h.rid === entry.rid)
+  if (idx >= 0) playerState.playHistory[idx] = entry
+  else playerState.playHistory.push(entry)
+  // 最多保留 200 条
+  if (playerState.playHistory.length > 200) {
+    playerState.playHistory = playerState.playHistory.slice(-200)
+  }
+  persistPlayHistory()
+}
 
 let audio: HTMLAudioElement | null = null
 
@@ -38,6 +88,7 @@ function ensureAudio(): HTMLAudioElement {
       playerState.duration = audio!.duration || 0
     })
     audio.addEventListener('ended', () => {
+      recordPlayHistory(playerState.current)
       playNext()
     })
     audio.addEventListener('pause', () => {
