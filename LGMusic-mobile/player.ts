@@ -1,7 +1,7 @@
 /**
  * 播放层：react-native-track-player + SecureKwApi 原生桥（网关 resolve）
  */
-import TrackPlayer, { Capability } from 'react-native-track-player'
+import TrackPlayer, { Capability, Event, State } from 'react-native-track-player'
 import { NativeModules } from 'react-native'
 
 const { SecureKwApi } = NativeModules as {
@@ -19,6 +19,7 @@ const { SecureKwApi } = NativeModules as {
 }
 
 export const secureApi = SecureKwApi
+export { Event, State }
 
 let initialized = false
 
@@ -29,8 +30,6 @@ export async function setupPlayer(): Promise<void> {
     capabilities: [
       Capability.Play,
       Capability.Pause,
-      Capability.SkipToNext,
-      Capability.SkipToPrevious,
       Capability.SeekTo
     ],
     compactCapabilities: [Capability.Play, Capability.Pause]
@@ -70,16 +69,29 @@ export async function playTrack(track: PlayableTrack): Promise<void> {
 
 export async function togglePlayback(): Promise<void> {
   const state = await TrackPlayer.getPlaybackState()
-  if (state.state === 'playing') await TrackPlayer.pause()
+  if (state.state === State.Playing) await TrackPlayer.pause()
   else await TrackPlayer.play()
 }
 
-export async function skipNext(): Promise<void> {
-  await TrackPlayer.skipToNext()
+export interface PlaybackProgress {
+  position: number
+  duration: number
 }
 
-export async function skipPrev(): Promise<void> {
-  await TrackPlayer.skipToPrevious()
+export async function getProgress(): Promise<PlaybackProgress> {
+  try {
+    const [position, duration] = await Promise.all([
+      TrackPlayer.getPosition(),
+      TrackPlayer.getDuration()
+    ])
+    return { position, duration }
+  } catch {
+    return { position: 0, duration: 0 }
+  }
+}
+
+export async function seekTo(seconds: number): Promise<void> {
+  await TrackPlayer.seekTo(seconds)
 }
 
 /** 六源搜索（原生 SecureKwApi.search，返回归一化歌单项） */
