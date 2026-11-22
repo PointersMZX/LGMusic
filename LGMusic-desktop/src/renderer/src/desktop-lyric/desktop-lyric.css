@@ -1,0 +1,62 @@
+/* 桌面歌词窗样式 —— 透明悬浮窗 + 整体可拖动 */
+.lyric-wrap {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  -webkit-app-region: drag;
+  cursor: move;
+}
+
+.lyric-main {
+  max-width: 92%;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
+  pointer-events: none;
+}
+
+.lyric-next {
+  max-width: 92%;
+  margin-top: 6px;
+  font-size: 16px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.75);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
+  pointer-events: none;
+}
+
+.lyric-drag {
+  position: absolute;
+  inset: 0;
+}
+
+.lyric-close {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  width: 22px;
+  height: 22px;
+  border-radius: 11px;
+  background: rgba(0, 0, 0, 0.35);
+  color: #fff;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  -webkit-app-region: no-drag;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.lyric-wrap:hover .lyric-close {
+  opacity: 1;
+}

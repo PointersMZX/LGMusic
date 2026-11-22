@@ -54,77 +54,10 @@
 import { computed, nextTick, ref, watch } from 'vue'
 import { playerState, togglePlay, playNext, playPrev, seekTo } from '../stores/player'
 import { nowPlayingState, hideNowPlaying } from '../stores/nowPlaying'
-
-const lyricLines = ref<Array<{ time: number; text: string }>>([])
-
-function parseLyric(text: string): Array<{ time: number; text: string }> {
-  const out: Array<{ time: number; text: string }> = []
-  for (const raw of text.split(/\r?\n/)) {
-    const matches = [...raw.matchAll(/\[(\d{1,2}):(\d{1,2})(?:[.:](\d{1,3}))?\]/g)]
-    if (!matches.length) continue
-    const content = raw
-      .replace(/^\[(?:\d{1,2}:\d{1,2}(?:[.:]\d{1,3})?)\]\s*/, '')
-      .replace(/\[(?:\d{1,2}:\d{1,2}(?:[.:]\d{1,3})?)\]/g, '')
-      .trim()
-    for (const m of matches) {
-      const time = Number(m[1]) * 60 + Number(m[2]) + (m[3] ? Number(`0.${m[3]}`) : 0)
-      out.push({ time, text: content })
-    }
-  }
-  return out.sort((a, b) => a.time - b.time)
-}
-
-async function loadLyric(): Promise<void> {
-  const track = playerState.current
-  lyricLines.value = []
-  if (!track) return
-  try {
-    const channelMap: Record<string, string> = {
-      wy: 'get-lyric-wy',
-      kw: 'get-lyric-kw',
-      kg: 'get-lyric-kg',
-      qq: 'get-lyric-qq',
-      mg: 'get-lyric-mg'
-    }
-    const channel = channelMap[track.source]
-    if (!channel) return
-    const payload = track.source === 'kg' ? track.hash : track.rid
-    const res = await window.electronAPI.invoke(channel, payload)
-    const raw = res?.lyric || res?.raw_lyric || res?.lrc || ''
-    lyricLines.value = parseLyric(String(raw))
-  } catch {
-    lyricLines.value = []
-  }
-}
-
-watch(() => playerState.current?.rid, loadLyric, { immediate: true })
-
-const activeIndex = computed(() => {
-  let idx = -1
-  for (let i = 0; i < lyricLines.value.length; i += 1) {
-    if (lyricLines.value[i].time <= playerState.currentTime) idx = i
-    else break
-  }
-  return idx
-})
-
-const lyricBox = ref<HTMLElement | null>(null)
-
-// 当前行变化 → 滚动歌词盒，让当前行保持在中部
-watch(activeIndex, async (idx) => {
-  if (idx < 0 || !lyricBox.value) return
-  await nextTick()
-  const line = lyricBox.value.querySelector(`[data-line="${idx}"]`) as HTMLElement | null
-  if (line) {
-    lyricBox.value.scrollTo({
-      top: line.offsetTop - lyricBox.value.clientHeight / 2 + line.clientHeight / 2,
-      behavior: 'smooth'
-    })
-  }
-})
+import { lyricState } from '../stores/lyrics'
 
 const lyricDisplay = computed(() =>
-  lyricLines.value.map((line, i) => ({ ...line, active: i === activeIndex.value }))
+  lyricState.lines.map((line, i) => ({ ...line, active: i === lyricState.activeIndex }))
 )
 
 const bgStyle = computed(() => {

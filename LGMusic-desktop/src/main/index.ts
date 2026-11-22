@@ -219,6 +219,7 @@ function createLyricWindow(): void {
     webPreferences: {
       preload: join(__dirname, '../preload/index.mjs'),
       contextIsolation: true,
+      sandbox: false,
       nodeIntegration: false
     }
   })
