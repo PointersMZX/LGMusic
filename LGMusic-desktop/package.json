@@ -12,7 +12,8 @@
     "dev": "electron-vite dev",
     "build": "electron-vite build",
     "preview": "electron-vite preview",
-    "typecheck": "vue-tsc --noEmit -p tsconfig.web.json"
+    "typecheck": "vue-tsc --noEmit -p tsconfig.web.json",
+    "pack": "electron-builder --win --dir"
   },
   "dependencies": {
     "vue": "^3.4.21"
@@ -20,9 +21,21 @@
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.1.0",
     "electron": "^30.5.1",
+    "electron-builder": "^26.18.0",
     "electron-vite": "^2.3.0",
     "typescript": "^5.5.4",
     "vite": "^5.4.8",
     "vue-tsc": "^2.1.6"
+  },
+  "build": {
+    "appId": "com.lg.music.desktop",
+    "productName": "LG Music",
+    "directories": {
+      "output": "release/desktop"
+    },
+    "files": [
+      "out/**/*",
+      "package.json"
+    ]
   }
 }
