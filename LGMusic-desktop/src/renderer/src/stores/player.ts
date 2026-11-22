@@ -59,7 +59,7 @@ async function playTrackAt(index: number): Promise<void> {
   playerState.error = ''
   playerState.level = ''
   try {
-    const resolved = await resolveTrack(track.source, track.rid)
+    const resolved = await resolveTrack(track)
     const url = extractPlaybackUrl(resolved)
     if (!url) throw new Error('未取得播放地址')
     playerState.level = resolved.level || ''

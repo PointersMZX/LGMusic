@@ -30,6 +30,7 @@ import { httpGetText, httpPostText } from './sources/types'
 import { GATEWAY_SERVERS } from './gateway/sign'
 import { getConfig, setConfig, type AppConfig } from './settings'
 import { listSources, importSourceDialog, deleteSource } from './sources-manager'
+import { listPluginSources, loadPluginRuntime, getLoadedPluginRuntime, callPluginRuntime } from './plugin-runtime'
 
 const VITE_DEV_SERVER_URL = process.env.ELECTRON_RENDERER_URL || process.env.VITE_DEV_SERVER_URL
 const RENDERER_DIST = app.isPackaged ? join(app.getAppPath(), 'dist') : join(process.env.APP_ROOT || path.dirname(__dirname, '..'), 'dist')
@@ -968,6 +969,13 @@ function registerIpcHandlers(): void {
   ipcMain.handle('source-list', () => listSources())
   ipcMain.handle('source-import', () => importSourceDialog(mainWindow ?? undefined))
   ipcMain.handle('source-delete', (_e, fileName) => deleteSource(String(fileName)))
+  // 音源插件运行时（node:vm MusicFree 沙箱）
+  ipcMain.handle('plugin-list', () => listPluginSources())
+  ipcMain.handle('plugin-load', (_e, fileName) => loadPluginRuntime(String(fileName)))
+  ipcMain.handle('plugin-loaded', () => getLoadedPluginRuntime())
+  ipcMain.handle('plugin-call', (_e, input) =>
+    callPluginRuntime(String(input?.action || ''), (input?.payload || {}) as Record<string, string>)
+  )
   ipcMain.handle('backup-get-status', () => wrapHandler(async () => backupService.getStatus()))
   ipcMain.handle('backup-set-settings', (_e, input) => wrapHandler(async () => backupService.setSettings(input)))
   ipcMain.handle('backup-create', (_e, input) => wrapHandler(async () => backupService.createBackup(input)))

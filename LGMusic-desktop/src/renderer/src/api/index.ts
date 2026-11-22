@@ -153,15 +153,116 @@ export interface ResolveResult {
   [key: string]: unknown
 }
 
-export async function resolveTrack(source: string, rid: string, level = 'standard'): Promise<ResolveResult> {
-  const sourceKey = source === 'tx' ? 'qq' : source
-  const res = await api.invoke('music-gateway-resolve', { source: sourceKey, rid, level })
-  if (res?.code && res.code !== 0) {
-    throw new Error(res.message || '播放地址解析失败')
-  }
+export async function resolveTrack(track: UnifiedTrack, level = 'standard'): Promise<ResolveResult> {
+  // 外置化：播放地址解析改走音源插件 getMediaSource（不再用青听内置网关）
+  const res = await pluginResolve(track, level)
   return res as ResolveResult
 }
 
 export function extractPlaybackUrl(res: ResolveResult): string {
   return res?.url || ''
+}
+
+// ---------------------------------------------------------------------------
+// 音源插件运行时（本体不内置音源，搜索/播放由用户导入的音源脚本提供）
+// ---------------------------------------------------------------------------
+
+export interface PluginSourceMeta {
+  fileName: string
+  name: string
+  importedAt: number
+}
+
+export async function pluginList(): Promise<PluginSourceMeta[]> {
+  return ((await api.invoke('plugin-list').catch(() => [])) || []) as PluginSourceMeta[]
+}
+
+export async function pluginLoad(fileName: string): Promise<string> {
+  return String(await api.invoke('plugin-load', fileName))
+}
+
+export async function pluginLoaded(): Promise<string | null> {
+  const v = await api.invoke('plugin-loaded').catch(() => null)
+  return v == null ? null : String(v)
+}
+
+export async function pluginCall(action: string, payload: Record<string, string>): Promise<AnyRecord> {
+  return (await api.invoke('plugin-call', { action, payload })) as AnyRecord
+}
+
+/** 插件搜索结果 → UnifiedTrack[] */
+function normalizePluginTracks(items: AnyRecord[], source: string): UnifiedTrack[] {
+  return items
+    .map((item) => {
+      const musicItem = (item.musicItem ?? item) as AnyRecord
+      const rid = String(musicItem.id ?? musicItem.rid ?? '')
+      const name = String(musicItem.title ?? musicItem.name ?? '')
+      const artist = String(
+        (musicItem.artist as AnyRecord)?.name ?? musicItem.artist ?? musicItem.singer ?? ''
+      )
+      return {
+        rid,
+        name,
+        artist,
+        album: (musicItem.album as AnyRecord)?.name as string | undefined,
+        pic:
+          ((musicItem.cover ?? musicItem.artwork ?? musicItem.img) as string | undefined) ||
+          ((musicItem.album as AnyRecord)?.cover as string | undefined),
+        duration: Number(musicItem.duration) || undefined,
+        source,
+        raw: musicItem
+      } as UnifiedTrack
+    })
+    .filter((t) => t.rid || t.name)
+}
+
+/** 通过当前加载的音源插件搜索 */
+export async function pluginSearch(
+  keyword: string,
+  page = 1
+): Promise<{ tracks: UnifiedTrack[]; total?: number }> {
+  const source = (await pluginLoaded()) || ''
+  const res = await pluginCall('searchMusic', {
+    query: keyword,
+    page: String(page),
+    type: 'music'
+  })
+  const result = (res.result ?? res) as AnyRecord
+  const list = (result.data as AnyRecord[]) || []
+  return { tracks: normalizePluginTracks(list, source) }
+}
+
+/** 通过音源插件解析播放地址（getMediaSource） */
+export async function pluginResolve(
+  track: UnifiedTrack,
+  level = 'standard'
+): Promise<ResolveResult> {
+  const musicItem = track.raw ?? {
+    id: track.rid,
+    title: track.name,
+    artist: track.artist,
+    album: track.album ?? '',
+    cover: track.pic ?? '',
+    duration: track.duration ?? 0
+  }
+  const res = await pluginCall('getMediaSource', {
+    musicItem: JSON.stringify(musicItem),
+    quality: level
+  })
+  const result = (res.result ?? res) as AnyRecord
+  const url = String(result.url ?? '')
+  if (!url) throw new Error(String(result.errorMessage || '音源未返回播放地址'))
+  const headers: Record<string, string> = {}
+  const resultHeaders = (result.headers ?? {}) as Record<string, unknown>
+  Object.keys(resultHeaders).forEach((k) => {
+    headers[k] = String(resultHeaders[k])
+  })
+  const userAgent = result.userAgent as string | undefined
+  if (userAgent) headers['User-Agent'] = userAgent
+  return {
+    url,
+    headers,
+    playbackHeaders: Object.keys(headers).length > 0 ? headers : undefined,
+    level: String(result.quality || level)
+  } as ResolveResult
 }
