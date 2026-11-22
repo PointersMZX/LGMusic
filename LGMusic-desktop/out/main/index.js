@@ -1,6 +1,6 @@
-import { app, dialog, safeStorage, session, ipcMain, shell, nativeImage, Tray, Menu, BrowserWindow } from "electron";
+import { app, dialog, safeStorage, BrowserWindow, session, ipcMain, shell, nativeImage, Tray, Menu } from "electron";
 import fs from "node:fs";
-import path, { join } from "node:path";
+import path, { join as join$1 } from "node:path";
 import { Stream } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import os from "node:os";
@@ -9,6 +9,8 @@ import http from "node:http";
 import https from "node:https";
 import fsp from "node:fs/promises";
 import { pathToFileURL } from "node:url";
+import { existsSync, readFileSync, mkdirSync, writeFileSync, unlinkSync } from "fs";
+import { dirname, join } from "path";
 import __cjs_mod__ from "node:module";
 const __filename = import.meta.filename;
 const __dirname = import.meta.dirname;
@@ -7101,8 +7103,138 @@ async function kgLyric(hash) {
     return { code: 500, msg: "请求失败" };
   }
 }
-const VITE_DEV_SERVER_URL = process.env.VITE_DEV_SERVER_URL;
-const RENDERER_DIST = app.isPackaged ? join(app.getAppPath(), "dist") : join(process.env.APP_ROOT || path.dirname(__dirname, ".."), "dist");
+const DEFAULTS = {
+  defaultQuality: "standard",
+  downloadDir: "",
+  desktopLyric: {
+    fontSize: 26,
+    color: "#29c586",
+    shadow: true,
+    twoLine: false
+  }
+};
+const configPath = () => join(app.getPath("userData"), "config.json");
+let cache = null;
+function getConfig() {
+  if (cache) return cache;
+  try {
+    if (existsSync(configPath())) {
+      const parsed = JSON.parse(readFileSync(configPath(), "utf-8"));
+      cache = {
+        ...DEFAULTS,
+        ...parsed,
+        desktopLyric: { ...DEFAULTS.desktopLyric, ...parsed.desktopLyric || {} }
+      };
+      return cache;
+    }
+  } catch {
+  }
+  cache = { ...DEFAULTS };
+  return cache;
+}
+function setConfig(patch) {
+  const merged = {
+    ...getConfig(),
+    ...patch,
+    desktopLyric: { ...getConfig().desktopLyric, ...patch.desktopLyric || {} }
+  };
+  cache = merged;
+  mkdirSync(dirname(configPath()), { recursive: true });
+  writeFileSync(configPath(), JSON.stringify(merged, null, 2), "utf-8");
+  return merged;
+}
+const sourcesDir = () => join(app.getPath("userData"), "sources");
+const indexPath = () => join(sourcesDir(), "index.json");
+function ensureDir() {
+  if (!existsSync(sourcesDir())) mkdirSync(sourcesDir(), { recursive: true });
+}
+function readIndex() {
+  ensureDir();
+  try {
+    if (existsSync(indexPath())) return JSON.parse(readFileSync(indexPath(), "utf-8"));
+  } catch {
+  }
+  return [];
+}
+function writeIndex(list) {
+  ensureDir();
+  writeFileSync(indexPath(), JSON.stringify(list, null, 2), "utf-8");
+}
+function probeMeta(fileName, content) {
+  let name = fileName.replace(/\.(js|json)$/i, "");
+  let type = "unknown";
+  let version = "";
+  if (/musicfree|getMediaSource/i.test(content)) {
+    type = "musicfree";
+    const m = content.match(/platform\s*:\s*['"]([^'"]+)['"]/);
+    if (m) name = m[1];
+    const v = content.match(/version\s*:\s*['"]([^'"]+)['"]/);
+    if (v) version = v[1];
+  } else if (/lx_setup|globalThis\.lx|__lx/i.test(content)) {
+    type = "lx";
+    const m = content.match(/音源名[：:]\s*([^\n]+)/);
+    if (m) name = m[1].trim();
+  } else {
+    try {
+      const json = JSON.parse(content);
+      if (json.name) name = String(json.name);
+      type = "json-config";
+    } catch {
+      type = "unknown";
+    }
+  }
+  return { name, type, version };
+}
+function listSources() {
+  return readIndex();
+}
+function importSourceDialog(parent) {
+  const win = parent ?? BrowserWindow.getAllWindows()[0];
+  const result = dialog.showOpenDialogSync(win, {
+    title: "导入音源配置",
+    filters: [{ name: "音源配置", extensions: ["js", "json"] }],
+    properties: ["openFile", "multiSelections"]
+  });
+  if (!result || result.length === 0) return Promise.resolve(null);
+  ensureDir();
+  const list = readIndex();
+  const added = [];
+  for (const filePath of result) {
+    try {
+      const content = readFileSync(filePath, "utf-8");
+      const baseName = filePath.split(/[\\/]/).pop();
+      const meta = probeMeta(baseName, content);
+      const target = join(sourcesDir(), baseName);
+      writeFileSync(target, content, "utf-8");
+      const entry = {
+        fileName: baseName,
+        name: meta.name,
+        type: meta.type,
+        version: meta.version,
+        importedAt: Date.now()
+      };
+      const existing = list.findIndex((x) => x.fileName === baseName);
+      if (existing >= 0) list[existing] = entry;
+      else list.push(entry);
+      added.push(entry);
+    } catch {
+    }
+  }
+  writeIndex(list);
+  return Promise.resolve(added);
+}
+function deleteSource(fileName) {
+  const list = readIndex().filter((x) => x.fileName !== fileName);
+  try {
+    const target = join(sourcesDir(), fileName);
+    if (existsSync(target)) unlinkSync(target);
+  } catch {
+  }
+  writeIndex(list);
+  return list;
+}
+const VITE_DEV_SERVER_URL = process.env.ELECTRON_RENDERER_URL || process.env.VITE_DEV_SERVER_URL;
+const RENDERER_DIST = app.isPackaged ? join$1(app.getAppPath(), "dist") : join$1(process.env.APP_ROOT || path.dirname(__dirname, ".."), "dist");
 process.env.APP_ROOT = process.env.APP_ROOT || path.join(__dirname, "..");
 process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL ? path.join(process.env.APP_ROOT, "public") : RENDERER_DIST;
 let mainWindow = null;
@@ -7169,7 +7301,7 @@ function createMainWindow() {
     frame: false,
     backgroundColor: "#f6f7f9",
     webPreferences: {
-      preload: join(__dirname, "../preload/index.mjs"),
+      preload: join$1(__dirname, "../preload/index.mjs"),
       sandbox: false,
       contextIsolation: true,
       nodeIntegration: false
@@ -7189,7 +7321,7 @@ function createMainWindow() {
   if (VITE_DEV_SERVER_URL) {
     void mainWindow.loadURL(VITE_DEV_SERVER_URL);
   } else {
-    void mainWindow.loadFile(join(__dirname, "../renderer/index.html"));
+    void mainWindow.loadFile(join$1(__dirname, "../renderer/index.html"));
   }
 }
 function hideToTray() {
@@ -7200,7 +7332,7 @@ function ensureTray() {
     tray.focus();
     return;
   }
-  const iconPath = join(process.env.VITE_PUBLIC || RENDERER_DIST, "icon.png");
+  const iconPath = join$1(process.env.VITE_PUBLIC || RENDERER_DIST, "icon.png");
   const icon = fs.existsSync(iconPath) ? nativeImage.createFromPath(iconPath) : nativeImage.createEmpty();
   tray = new Tray(icon);
   tray.setToolTip("甘露音乐");
@@ -7248,8 +7380,9 @@ function createLyricWindow() {
     resizable: false,
     movable: true,
     webPreferences: {
-      preload: join(__dirname, "../preload/index.mjs"),
+      preload: join$1(__dirname, "../preload/index.mjs"),
       contextIsolation: true,
+      sandbox: false,
       nodeIntegration: false
     }
   });
@@ -7257,7 +7390,7 @@ function createLyricWindow() {
   if (VITE_DEV_SERVER_URL) {
     void lyricWindow.loadURL(`${VITE_DEV_SERVER_URL}/desktop-lyric.html`);
   } else {
-    void lyricWindow.loadFile(join(RENDERER_DIST, "desktop-lyric.html"));
+    void lyricWindow.loadFile(join$1(RENDERER_DIST, "desktop-lyric.html"));
   }
   lyricWindow.webContents.on("did-finish-load", () => {
     if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send("lyric-window-opened");
@@ -7921,6 +8054,11 @@ function registerIpcHandlers() {
       autoSyncEnabled: payload?.autoSyncEnabled
     });
   });
+  ipcMain.handle("settings-get", () => getConfig());
+  ipcMain.handle("settings-set", (_e, patch) => setConfig(patch));
+  ipcMain.handle("source-list", () => listSources());
+  ipcMain.handle("source-import", () => importSourceDialog(mainWindow ?? void 0));
+  ipcMain.handle("source-delete", (_e, fileName) => deleteSource(String(fileName)));
   ipcMain.handle("backup-get-status", () => wrapHandler(async () => backupService.getStatus()));
   ipcMain.handle("backup-set-settings", (_e, input) => wrapHandler(async () => backupService.setSettings(input)));
   ipcMain.handle("backup-create", (_e, input) => wrapHandler(async () => backupService.createBackup(input)));

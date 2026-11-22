@@ -14,7 +14,7 @@ import com.facebook.react.uimanager.ViewManager
 class AppPackages : ReactPackage {
   override fun createNativeModules(reactContext: ReactApplicationContext): List<NativeModule> =
     listOf(
-      SecureKwApiModule(reactContext),
+      PluginSourceRuntime(reactContext),
       CencModule(reactContext),
       DesktopLyricsModule(reactContext),
       LocalMusicScannerModule(reactContext)

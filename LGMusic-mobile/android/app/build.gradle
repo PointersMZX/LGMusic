@@ -121,6 +121,10 @@ dependencies {
     // The version of react-native is set by the React Native Gradle Plugin
     implementation("com.facebook.react:react-android")
 
+    // 音源插件运行时（外置音源脚本沙箱，开源 QuickJS 封装）
+    implementation("wang.harlon.quickjs:wrapper-android:2.4.0")
+    implementation("wang.harlon.quickjs:wrapper-java:2.4.0")
+
     if (hermesEnabled.toBoolean()) {
         implementation("com.facebook.react:hermes-android")
     } else {

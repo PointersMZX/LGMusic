@@ -29,17 +29,13 @@ import {
   seekTo,
   getProgress,
   setupPlayer,
-  type PlayableTrack
+  listSources,
+  importSourceUrl,
+  deleteSource,
+  loadPlugin,
+  type PlayableTrack,
+  type MusicSource
 } from './player'
-
-const SOURCES = [
-  { key: 'kg', label: '酷狗' },
-  { key: 'wy', label: '网易' },
-  { key: 'kw', label: '酷我' },
-  { key: 'qq', label: 'QQ' },
-  { key: 'mg', label: '咪咕' },
-  { key: 'bili', label: 'B站' }
-]
 
 interface Track extends PlayableTrack {
   rid: string
@@ -52,7 +48,6 @@ function fmt(sec: number): string {
 }
 
 const App = (): React.JSX.Element => {
-  const [source, setSource] = useState('kg')
   const [keyword, setKeyword] = useState('')
   const [tracks, setTracks] = useState<Track[]>([])
   const [loading, setLoading] = useState(false)
@@ -62,6 +57,23 @@ const App = (): React.JSX.Element => {
   const [showPlayer, setShowPlayer] = useState(false)
   const [progress, setProgress] = useState({ position: 0, duration: 0 })
   const [sourceResults, setSourceResults] = useState<Record<string, Track[]>>({})
+  const [availableSources, setAvailableSources] = useState<MusicSource[]>([])
+  const [activeSource, setActiveSource] = useState<string>('')
+  const [sourceUrl, setSourceUrl] = useState('')
+  const [importing, setImporting] = useState(false)
+  const [showSources, setShowSources] = useState(false)
+
+  // 启动时加载已导入音源列表并恢复上次使用的音源
+  useEffect(() => {
+    void (async () => {
+      const list = await listSources().catch(() => [])
+      setAvailableSources(list)
+      if (list.length > 0) {
+        const loaded = await loadPlugin(list[0].fileName).catch(() => null)
+        setActiveSource(loaded ?? list[0].fileName)
+      }
+    })()
+  }, [])
 
   // track-player 事件订阅（播放状态 + 进度），替代轮询
   useEffect(() => {
@@ -88,9 +100,10 @@ const App = (): React.JSX.Element => {
       setError('')
       try {
         // 六源统一走原生 SecureKwApi 桥（网关 resolve/search 能力，与桌面端协议一致）
-        const found = await searchMusic(source, text, 1, 30)
+        if (!activeSource) throw new Error('请先在「音源」页导入音源脚本')
+        const found = await searchMusic(activeSource, text, 1, 30)
         setTracks(found)
-        setSourceResults((prev) => ({ ...prev, [`${source}:${text}`]: found }))
+        setSourceResults((prev) => ({ ...prev, [`${activeSource}:${text}`]: found }))
       } catch (err) {
         setError(err instanceof Error ? err.message : String(err))
         setTracks([])
@@ -98,7 +111,7 @@ const App = (): React.JSX.Element => {
         setLoading(false)
       }
     },
-    [source]
+    [activeSource]
   )
 
   const playTrack = useCallback(async (track: Track, list?: Track[]) => {
@@ -123,6 +136,40 @@ const App = (): React.JSX.Element => {
     },
     [current, tracks, playTrack]
   )
+
+  const switchSource = useCallback(async (fileName: string) => {
+    const loaded = await loadPlugin(fileName).catch(() => null)
+    setActiveSource(loaded ?? fileName)
+  }, [])
+
+  const doImportSource = useCallback(async () => {
+    const url = sourceUrl.trim()
+    if (!url) return
+    setImporting(true)
+    setError('')
+    try {
+      const fileName = await importSourceUrl(url)
+      setSourceUrl('')
+      const list = await listSources().catch(() => [])
+      setAvailableSources(list)
+      await loadPlugin(fileName)
+      setActiveSource(fileName)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err))
+    } finally {
+      setImporting(false)
+    }
+  }, [sourceUrl])
+
+  const doDeleteSource = useCallback(async (fileName: string) => {
+    await deleteSource(fileName).catch(() => null)
+    const list = await listSources().catch(() => [])
+    setAvailableSources(list)
+    if (activeSource === fileName) {
+      setActiveSource(list[0]?.fileName ?? '')
+      if (list[0]) await loadPlugin(list[0].fileName)
+    }
+  }, [activeSource])
 
   const toggleNow = useCallback(async () => {
     try {
@@ -166,6 +213,74 @@ const App = (): React.JSX.Element => {
     ),
     [playTrack, tracks]
   )
+
+  // ---------------------------------------------------------------------------
+  // 音源管理页
+  // ---------------------------------------------------------------------------
+  if (showSources) {
+    return (
+      <SafeAreaView style={styles.safe}>
+        <StatusBar barStyle="dark-content" backgroundColor="#f6f7f9" />
+        <View style={styles.sourcesTop}>
+          <Pressable onPress={() => setShowSources(false)} hitSlop={10}>
+            <Text style={styles.playerClose}>‹</Text>
+          </Pressable>
+          <Text style={styles.sourcesTitle}>音源管理</Text>
+          <View style={{ width: 28 }} />
+        </View>
+        <View style={styles.importRow}>
+          <TextInput
+            style={styles.searchInput}
+            placeholder="粘贴音源脚本 URL（.js）"
+            placeholderTextColor="#9ca3af"
+            value={sourceUrl}
+            onChangeText={setSourceUrl}
+            autoCapitalize="none"
+          />
+          <Pressable
+            style={[styles.searchBtn, importing && styles.importBtnDisabled]}
+            disabled={importing}
+            onPress={() => void doImportSource()}
+          >
+            <Text style={styles.searchBtnText}>{importing ? '导入中' : '导入'}</Text>
+          </Pressable>
+        </View>
+        <FlatList
+          data={availableSources}
+          keyExtractor={(s) => s.fileName}
+          renderItem={({ item }) => (
+            <View style={styles.sourceRow}>
+              <Pressable
+                style={styles.sourceMeta}
+                onPress={() => void switchSource(item.fileName)}
+              >
+                <Text
+                  numberOfLines={1}
+                  style={[styles.sourceNameText, item.fileName === activeSource && styles.sourceNameOn]}
+                >
+                  {item.name}
+                  {item.fileName === activeSource ? '（使用中）' : ''}
+                </Text>
+                <Text numberOfLines={1} style={styles.sourceFileText}>
+                  {item.fileName}
+                </Text>
+              </Pressable>
+              <Pressable
+                style={styles.sourceDelete}
+                onPress={() => void doDeleteSource(item.fileName)}
+              >
+                <Text style={styles.sourceDeleteText}>删除</Text>
+              </Pressable>
+            </View>
+          )}
+        />
+        {error ? <Text style={styles.errorText}>{error}</Text> : null}
+        <Text style={styles.sourcesHint}>
+          本体不内置音源。可导入 MusicFree 插件（.js）或 LX 音源脚本，音源由用户自行提供。
+        </Text>
+      </SafeAreaView>
+    )
+  }
 
   // ---------------------------------------------------------------------------
   // 全屏播放页
@@ -254,16 +369,27 @@ const App = (): React.JSX.Element => {
         </Pressable>
       </View>
       <View style={styles.sourceTabs}>
-        {SOURCES.map((s) => (
+        {availableSources.map((s) => (
           <Pressable
-            key={s.key}
-            style={[styles.tab, s.key === source && styles.tabOn]}
-            onPress={() => setSource(s.key)}
+            key={s.fileName}
+            style={[styles.tab, s.fileName === activeSource && styles.tabOn]}
+            onPress={() => void switchSource(s.fileName)}
           >
-            <Text style={[styles.tabText, s.key === source && styles.tabTextOn]}>{s.label}</Text>
+            <Text
+              numberOfLines={1}
+              style={[styles.tabText, s.fileName === activeSource && styles.tabTextOn]}
+            >
+              {s.name}
+            </Text>
           </Pressable>
         ))}
+        <Pressable style={[styles.tab, styles.tabAdd]} onPress={() => setShowSources(true)}>
+          <Text style={styles.tabTextOn}>＋音源</Text>
+        </Pressable>
       </View>
+      {availableSources.length === 0 ? (
+        <Text style={styles.emptySourceTip}>尚未导入音源脚本，点「＋音源」导入后即可搜索播放</Text>
+      ) : null}
       {error ? <Text style={styles.errorText}>{error}</Text> : null}
       {loading ? (
         <ActivityIndicator style={styles.loading} color="#29c586" size="large" />
@@ -431,7 +557,57 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center'
   },
-  ctrlMainText: { fontSize: 30, color: '#fff' }
+  ctrlMainText: { fontSize: 30, color: '#fff' },
+  tabAdd: { backgroundColor: '#fff', borderStyle: 'dashed' },
+  emptySourceTip: {
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    fontSize: 12,
+    color: '#e08a3a'
+  },
+  sourcesTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingTop: 8
+  },
+  sourcesTitle: { fontSize: 17, fontWeight: '700', color: '#1f2329' },
+  importRow: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    gap: 8
+  },
+  importBtnDisabled: { opacity: 0.6 },
+  sourceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0,0,0,0.05)'
+  },
+  sourceMeta: { flex: 1 },
+  sourceNameText: { fontSize: 14, fontWeight: '500', color: '#374151' },
+  sourceNameOn: { color: '#17a06b', fontWeight: '600' },
+  sourceFileText: { fontSize: 11, color: '#9ca3af', marginTop: 3 },
+  sourceDelete: {
+    paddingHorizontal: 12,
+    height: 30,
+    borderRadius: 15,
+    borderWidth: 1,
+    borderColor: 'rgba(229,72,77,0.35)',
+    justifyContent: 'center'
+  },
+  sourceDeleteText: { color: '#e5484d', fontSize: 12 },
+  sourcesHint: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    fontSize: 12,
+    color: '#9ca3af',
+    lineHeight: 18
+  }
 })
 
 export default App
